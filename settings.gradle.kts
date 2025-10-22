@@ -16,6 +16,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "PersonaAndroidstarter"
 include(":app")
-include(":desktopApp")
-include(":webApp")
-include(":persona_core")
