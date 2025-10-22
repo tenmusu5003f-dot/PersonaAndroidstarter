@@ -1,19 +1,61 @@
-// Project-level build.gradle.kts
 plugins {
-    id("com.android.application") version "8.6.0" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.23" apply false
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
 }
 
-tasks.register<Delete>("clean") {
-    delete(rootProject.buildDir)
+android {
+    namespace = "com.example.persona"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.example.persona"
+        minSdk = 26
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0.0"
+        vectorDrawables.useSupportLibrary = true
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        debug {
+            applicationIdSuffix = ".debug"
+            isMinifyEnabled = false
+        }
+    }
+
+    buildFeatures { compose = true }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
+
+    packaging {
+        resources.excludes += setOf("META-INF/LICENSE*", "META-INF/NOTICE*")
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = "17" }
 }
 
-// Project-level build.gradle.kts
-plugins {
-    id("com.android.application") version "8.6.0" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.23" apply false
-}
+dependencies {
+    // Compose UI
+    implementation("androidx.activity:activity-compose:1.9.2")
+    implementation("androidx.compose.ui:ui:1.6.8")
+    implementation("androidx.compose.material3:material3:1.2.1")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.6.8")
 
-tasks.register<Delete>("clean") {
-    delete(rootProject.buildDir)
+    // WorkManager（夜間学習・最適化）
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // Lifecycle（必要最低限）
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.3")
 }
