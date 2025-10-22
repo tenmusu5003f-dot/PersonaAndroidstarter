@@ -5,21 +5,19 @@ import android.util.Log
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 
-class BackgroundLearningWorker(ctx: Context, params: WorkerParameters) :
-    Worker(ctx, params) {
-
+class BackgroundLearningWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, params) {
     override fun doWork(): Result {
         return try {
-            Log.i("PersonaAI", "⏳ Starting background optimization")
+            Log.i("Persona", "⏳ nightly optimization start")
 
-            // 🔁 ここにAIのバックグラウンド最適化処理を追加予定
-            Thread.sleep(1000)
+            // TODO: ここに学習/最適化処理を実装
+            Thread.sleep(800) // ダミー
 
-            Log.i("PersonaAI", "✅ Optimization cycle completed")
+            Log.i("Persona", "✅ nightly optimization done")
             Result.success()
         } catch (e: Exception) {
-            Log.e("PersonaAI", "❌ Optimization failed: ${e.message}")
+            Log.e("Persona", "❌ optimization failed: ${e.message}")
             Result.retry()
         }
     }
-    }
+}
