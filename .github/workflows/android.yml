@@ -1,72 +1,36 @@
-name: Android CI (ultra fast debug build)
+name: Persona Universal Build
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-
-concurrency:
-  group: android-ci-${{ github.ref }}
-  cancel-in-progress: true
-
-permissions:
-  contents: read
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    env:
-      # 高速化フラグ
-      GRADLE_OPTS: "-Dorg.gradle.daemon=true -Dorg.gradle.parallel=true -Dkotlin.incremental=true"
-      JAVA_TOOL_OPTIONS: "-Xmx2g"
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-          cache: gradle
+          java-version: 17
 
-      - name: Setup Gradle (with cache)
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: wrapper
-          cache-read-only: false
-
-      # 並列キャッシュ有効化・2コア上限のためworker数制御
-      - name: Pre-warm Gradle caches
-        run: |
-          ./gradlew help --no-daemon --parallel --max-workers=2 || true
-
-      - name: Build Debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace --parallel --no-daemon --max-workers=2
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/*.apk
-
-      # ---- 末尾: キャッシュ状態を確認・保存（ゼロコスト系統） ----
-      - name: Show cache usage
-        if: always()
-        run: |
-          echo "Gradle cache:"
-          du -sh ~/.gradle/caches || true
-          echo "Wrapper:"
-          du -sh ~/.gradle/wrapper || true
-
-      - name: Fallback cache save
-        if: always()
-        continue-on-error: true
-        uses: actions/cache/save@v4
+      - name: Cache Gradle
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*') }}
+          restore-keys: gradle-${{ runner.os }}
+
+      - name: Build Android APK
+        run: ./gradlew :androidApp:assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Persona-Android-Debug
+          path: androidApp/build/outputs/apk/debug/*.apk
