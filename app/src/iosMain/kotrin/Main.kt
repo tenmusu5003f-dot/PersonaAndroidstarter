@@ -1,8 +1,9 @@
-import com.example.persona.core.*
+import com.example.persona.core.PersonaCore
+import com.example.persona.core.DefaultOSBridge
+import kotlinx.browser.document
 
 fun main() {
-    val core = PersonaCore()
+    val core = PersonaCore(os = DefaultOSBridge())
     val msg = core.greet("Architect")
-    println(">>> $msg")
     document.getElementById("root")?.textContent = msg
 }
