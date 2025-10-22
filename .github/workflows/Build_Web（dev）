@@ -1,0 +1,8 @@
+- name: Setup Gradle
+  uses: gradle/actions/setup-gradle@v3
+  with:
+    gradle-version: 8.9
+
+- name: Build Web (dev)
+  working-directory: app
+  run: gradle :webApp:browserDevelopmentWebpack --no-daemon --stacktrace
