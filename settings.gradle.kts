@@ -1,11 +1,10 @@
 pluginManagement {
     repositories {
-        google()
         gradlePluginPortal()
+        google()
         mavenCentral()
     }
 }
-
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -15,4 +14,8 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "PersonaAndroidstarter"
+
+// あなたのモジュール名に合わせて↓を調整
 include(":app")
+include(":desktopApp")
+include(":webApp")
