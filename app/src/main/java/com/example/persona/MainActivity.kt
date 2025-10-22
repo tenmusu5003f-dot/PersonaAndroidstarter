@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.persona.data.PersonaConfig
 import com.example.persona.tts.TtsHelper
+import com.example.persona.settings.SettingsScreen
 
 class MainActivity : ComponentActivity() {
     private lateinit var tts: TtsHelper
@@ -19,16 +20,24 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         tts = TtsHelper(this)
-
         val personas = PersonaConfig.load(this)
 
         setContent {
             MaterialTheme {
-                PersonaHome(
-                    personas = personas,
-                    onSpeak = { tts.speak(it) },
-                    onOptimize = { /* 将来: 即時最適化処理 */ true }
-                )
+                var showSettings by remember { mutableStateOf(false) }
+                if (showSettings) {
+                    SettingsScreen(
+                        context = this,
+                        onBack = { showSettings = false }
+                    )
+                } else {
+                    PersonaHome(
+                        personas = personas,
+                        onSpeak = { tts.speak(it) },
+                        onOptimize = { true },
+                        onOpenSettings = { showSettings = true }
+                    )
+                }
             }
         }
     }
@@ -43,12 +52,20 @@ class MainActivity : ComponentActivity() {
 fun PersonaHome(
     personas: List<com.example.persona.data.PersonaEntry>,
     onSpeak: (String) -> Unit,
-    onOptimize: () -> Boolean
+    onOptimize: () -> Boolean,
+    onOpenSettings: () -> Unit
 ) {
     var status by remember { mutableStateOf("Persona is online.") }
 
     Scaffold(
-        topBar = { SmallTopAppBar(title = { Text("Persona") }) }
+        topBar = {
+            SmallTopAppBar(
+                title = { Text("Persona") },
+                actions = {
+                    TextButton(onClick = onOpenSettings) { Text("設定") }
+                }
+            )
+        }
     ) { pad ->
         Column(Modifier.padding(pad).padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
