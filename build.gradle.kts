@@ -59,3 +59,18 @@ dependencies {
     // Lifecycle（必要最低限）
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.3")
 }
+
+dependencies {
+    // 既存 …
+    implementation("androidx.activity:activity-compose:1.9.2")
+    implementation("androidx.compose.ui:ui:1.6.8")
+    implementation("androidx.compose.material3:material3:1.2.1")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.6.8")
+
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.3")
+
+    // ▼ 追加：設定保存に DataStore を使う（SharedPreferencesより安全）
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+}
