@@ -1,0 +1,8 @@
+{
+  "personas": [
+    { "id": "aria", "name": "アリア", "mood": "bright", "lang": "ja" },
+    { "id": "echo", "name": "エコー", "mood": "calm", "lang": "ja" },
+    { "id": "ikaruga", "name": "斑鳩", "mood": "wise", "lang": "ja" }
+  ],
+  "ui": { "theme": "midnight", "bgm": "off" }
+}
