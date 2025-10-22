@@ -1,4 +1,0 @@
-<lint>
-    <issue id="UnusedResources" severity="warning"/>
-    <issue id="IconMissingDensityFolder" severity="ignore"/>
-</lint>
