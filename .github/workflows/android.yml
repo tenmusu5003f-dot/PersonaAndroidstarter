@@ -1,28 +1,35 @@
-name: Android CI (fast apk)
+name: Android CI (build debug APK)
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (with Gradle cache)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: '17'
+          cache: gradle
 
-      # ★ Gradle公式のキャッシュ（依存＆タスク履歴）を自動活用
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+      - name: Build Debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace
 
-      - name: Build Debug APK (fast)
-        run: ./gradlew :app:assembleDebug --scan
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
