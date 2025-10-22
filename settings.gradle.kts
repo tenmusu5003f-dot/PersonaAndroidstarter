@@ -31,8 +31,3 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-
-<SwitchPreferenceCompat
-    android:key="auto_backup_enabled"
-    android:title="自動バックアップを有効にする"
-    android:summary="オンにすると毎日自動でバックアップを行います" />
