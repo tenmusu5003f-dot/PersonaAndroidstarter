@@ -1,0 +1,9 @@
+fun scheduleBackup(context: Context) {
+    val workRequest = PeriodicWorkRequestBuilder<BackupWorker>(1, TimeUnit.DAYS)
+        .build()
+    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        "dailyBackup",
+        ExistingPeriodicWorkPolicy.REPLACE,
+        workRequest
+    )
+}
