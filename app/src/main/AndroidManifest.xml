@@ -23,3 +23,12 @@
         <!-- WorkManager はマニフェスト登録不要（コードからスケジュール） -->
     </application>
 </manifest>
+
+<receiver
+    android:name=".backup.BootReceiver"
+    android:enabled="true"
+    android:exported="false">
+    <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+    </intent-filter>
+</receiver>
