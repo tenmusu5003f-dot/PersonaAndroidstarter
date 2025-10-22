@@ -1,3 +1,10 @@
+
+
+
+---
+
+README.md
+
 # PersonaAndroidstarter
 
 > **最小構成の Android/Kotlin サンプル**  
@@ -42,10 +49,38 @@
 git clone https://github.com/<YOUR_USER>/<YOUR_REPO>.git
 cd <YOUR_REPO>
 
+2) ビルド（ローカル）
+
 ./gradlew assembleDebug
 # Windows の場合: gradlew.bat assembleDebug
 
+3) 実機インストール（adb）
+
 adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+
+---
+
+🤖 GitHub Actions でのビルド
+
+対象ワークフロー: .github/workflows/android.yml
+
+トリガー: push / pull_request（main）
+
+
+成果物の取得手順
+
+1. GitHub > Actions > 最新の build ジョブを開く
+
+
+2. Artifacts の app-debug をダウンロード（ZIP）
+
+
+
+
+---
+
+📁 プロジェクト構成
 
 .
 ├─ app/
@@ -58,4 +93,77 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ├─ settings.gradle.kts   # ルート設定（ある場合）
 └─ .github/workflows/android.yml  # CI
 
+
+---
+
+🔐 セキュリティ方針（要点）
+
+最小権限の原則：不要なパーミッションは宣言しない
+
+署名鍵：公開リポジトリには置かない。配布時は Play App Signing を利用
+
+CI サンドボックス：Secrets を使う場合は環境分離し、ログへ出力しない
+
+依存解決：google(), mavenCentral() のみ使用
+
+
+
+---
+
+🧰 トラブルシュート
+
+🔸 Inconsistent JVM-target（Java 1.8 vs Kotlin 17）
+
+android { compileOptions { sourceCompatibility/targetCompatibility = JavaVersion.VERSION_17 } }
+
+kotlinOptions { jvmTarget = "17" } を app/build.gradle.kts に設定
+
+
+🔸 ./gradlew: No such file or directory
+
+ルートに gradlew と gradle/wrapper/gradle-wrapper.jar が存在するか確認
+
+ない場合はローカルで gradle wrapper を実行してコミット
+
+実行権限付与（ローカル）
+
 chmod +x gradlew
+
+
+🔸 Action の警告: gradle/gradle-build-action は非推奨
+
+置き換え済み: gradle/actions/setup-gradle@v3
+
+
+🔸 CI のキャッシュ警告が出る
+
+ビルドは成功なら問題なし（速度最適化の警告）。時間ができたらキャッシュキーを調整。
+
+
+
+---
+
+📝 ライセンス
+
+MIT または任意（ここに記載）
+
+
+---
+
+🙏 謝辞
+
+Android & Kotlin チーム
+
+GitHub Actions メンテナ
+
+共同開発のみなさん
+
+
+---
+
+## 置き換える箇所メモ
+- `<YOUR_USER>` と `<YOUR_REPO>` を自分のものに差し替え。
+- ライセンス文言をあなたの意図に合わせて更新。
+
+
+
