@@ -41,3 +41,21 @@
 ```bash
 git clone https://github.com/<YOUR_USER>/<YOUR_REPO>.git
 cd <YOUR_REPO>
+
+./gradlew assembleDebug
+# Windows の場合: gradlew.bat assembleDebug
+
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+.
+├─ app/
+│  ├─ src/main/
+│  │  ├─ AndroidManifest.xml
+│  │  ├─ java/...        # コード
+│  │  └─ res/...         # リソース
+│  └─ build.gradle.kts   # アプリ用 Gradle
+├─ build.gradle.kts      # ルート（ある場合）
+├─ settings.gradle.kts   # ルート設定（ある場合）
+└─ .github/workflows/android.yml  # CI
+
+chmod +x gradlew
