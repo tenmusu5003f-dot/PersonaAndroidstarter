@@ -1,0 +1,10 @@
+{
+  "appName": "Persona",
+  "minLogLevel": "INFO",
+  "cache": { "memoryLimit": 16, "diskEnabled": true },
+  "features": {
+    "useCompose": true,
+    "bgmEnabled": false,
+    "telemetry": false
+  }
+}
