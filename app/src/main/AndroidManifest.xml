@@ -19,3 +19,18 @@
 
     </application>
 </manifest>
+
+<service
+    android:name=".BackgroundLearningWorker"
+    android:enabled="true"
+    android:exported="false" />
+
+<uses-permission android:name="android.permission.WAKE_LOCK" />
+<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+<application
+    android:name=".PersonaApplication"
+    android:hardwareAccelerated="true"
+    android:largeHeap="true"
+    android:supportsRtl="true"
+    android:allowBackup="true">
