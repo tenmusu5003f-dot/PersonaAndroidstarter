@@ -16,3 +16,13 @@ kotlin {
         }
     }
 }
+
+plugins {
+    // ルートは空でOK（各サブプロジェクトに記述）
+}
+
+allprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        kotlinOptions.jvmTarget = "17"
+    }
+}
