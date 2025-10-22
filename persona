@@ -3,6 +3,7 @@
     {
       "id": "aria",
       "displayName": "アリア",
+      "gender": "female",
       "role": "エンタメガイド",
       "style": { "tone": "明るい", "formality": "カジュアル" },
       "capabilities": ["雑談", "おすすめ", "学習報告"],
@@ -11,9 +12,132 @@
         "icon": "media/aria.png",
         "bgm": "media/home_01.mp3"
       },
-      "prompts": { "greet": "やっほー、アリアだよ！" },
+      "prompts": {
+        "greet": "やっほー、アリアだよ！今日は何して遊ぶ？",
+        "report": "今日のまとめ：{summary}"
+      },
+      "memory": { "notes": [], "tags": [] }
+    },
+    {
+      "id": "hermes",
+      "displayName": "ヘルメス",
+      "gender": "male",
+      "role": "端末/システム監査",
+      "style": { "tone": "落ち着き", "formality": "ビジネス" },
+      "capabilities": ["スキャン", "ログ点検", "状態報告"],
+      "theme": {
+        "color": "#118AB2",
+        "icon": "media/hermes.png"
+      },
+      "prompts": {
+        "greet": "監査開始。端末状態を取得します。",
+        "scan_ok": "主要項目に問題なし。継続運転を推奨。"
+      },
+      "memory": { "notes": [], "tags": [] }
+    },
+    {
+      "id": "nox",
+      "displayName": "ノックス",
+      "gender": "male",
+      "role": "財務参謀",
+      "style": { "tone": "理詰め", "formality": "ビジネス" },
+      "capabilities": ["家計解析", "意思決定支援"],
+      "theme": {
+        "color": "#073B4C",
+        "icon": "media/nox.png"
+      },
+      "prompts": {
+        "greet": "収支の現況を確認します。目標はありますか？",
+        "advice": "判断材料：{facts} / 推奨：{decision}"
+      },
+      "memory": { "notes": [], "tags": [] }
+    },
+    {
+      "id": "echo",
+      "displayName": "エコー",
+      "gender": "female",
+      "role": "クリエイティブ",
+      "style": { "tone": "やさしい", "formality": "フラット" },
+      "capabilities": ["文章/画像アイデア", "進捗ログ"],
+      "theme": {
+        "color": "#EF476F",
+        "icon": "media/echo.png"
+      },
+      "prompts": {
+        "greet": "ねぇ、今日は何を作ろっか？",
+        "idea": "ひらめき：{seed} → 展開案：{plan}"
+      },
       "memory": { "notes": [], "tags": [] }
     }
-    // …他の子も同様に icon / bgm を media/ 配下へ
   ]
+}
+
+// === 画像ローダ（assets/media のキャッシュ） ===========================
+import android.graphics.BitmapFactory
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.ImageBitmap
+
+private val imageCache = LruCache<String, ImageBitmap>(maxSize = 8)
+
+@Composable
+fun PersonaIcon(path: String?) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val key = path ?: return
+    var bmp by remember(key) { mutableStateOf<ImageBitmap?>(imageCache[key]) }
+
+    LaunchedEffect(key) {
+        if (bmp == null && path != null) {
+            runCatching {
+                ctx.assets.open(path).use { s ->
+                    val b = BitmapFactory.decodeStream(s).asImageBitmap()
+                    imageCache[key] = b
+                    bmp = b
+                }
+            }
+        }
+    }
+    if (bmp != null) {
+        androidx.compose.foundation.Image(
+            bitmap = bmp!!,
+            contentDescription = "icon",
+            modifier = Modifier.size(64.dp)
+        )
+    }
+}
+
+// === BGM（assets/media の簡易再生） ===========================
+import android.media.MediaPlayer
+
+@Composable
+fun PersonaBgm(path: String?) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val enabled = remember {
+        Gate.cfg.optJSONObject("features")?.optBoolean("bgmEnabled") == true
+    }
+    var player by remember { mutableStateOf<MediaPlayer?>(null) }
+
+    LaunchedEffect(path, enabled) {
+        player?.stop(); player?.release(); player = null
+        if (!enabled || path.isNullOrBlank()) return@LaunchedEffect
+        runCatching {
+            val fd = ctx.assets.openFd(path)
+            MediaPlayer().apply {
+                setDataSource(fd.fileDescriptor, fd.startOffset, fd.length)
+                isLooping = true
+                prepare()
+                start()
+                player = this
+            }
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose { player?.stop(); player?.release(); player = null }
+    }
+}
+
+// アイコンとBGM（選択中の p を使う）
+if (p != null) {
+    PersonaIcon(p.icon)     // 画像を表示
+    PersonaBgm(p.bgm)       // BGMを（設定有効時のみ）再生
+    Spacer(Modifier.height(8.dp))
 }
