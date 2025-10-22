@@ -1,7 +1,0 @@
-/settings.gradle.kts
-/app/build.gradle.kts
-/app/src/main/AndroidManifest.xml
-/app/src/main/kotlin/com/example/persona/PersonaEntry.kt   ← 1枚に集約
-/app/src/main/assets/config.json                           ← システム設定
-/app/src/main/assets/personas.json                         ← 全ペルソナを1ファイルに同梱
-/app/src/main/assets/media/…（任意）                      ← 画像/音（あれば）
