@@ -1,35 +1,5 @@
 plugins {
-  id("com.android.application")
-  kotlin("android")
-}
-
-android {
-  namespace = "com.example.persona"
-  compileSdk = 34
-
-  defaultConfig {
-    applicationId = "com.example.persona"
-    minSdk = 24
-    targetSdk = 34
-    versionCode = 1
-    versionName = "1.0"
-  }
-
-  buildTypes {
-    release {
-      isMinifyEnabled = false
-      proguardFiles(
-        getDefaultProguardFile("proguard-android-optimize.txt"),
-        "proguard-rules.pro"
-      )
-    }
-  }
-}
-
-dependencies {
-  implementation("androidx.core:core-ktx:1.13.1")
-  implementation("androidx.appcompat:appcompat:1.7.0")
-  implementation("com.google.android.material:material:1.12.0")
-  implementation("androidx.activity:activity-ktx:1.9.2")
-  implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    // ここは「ルート用」。apply false でOK（実体は app 側で有効化）
+    id("com.android.application") version "8.7.0" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.24" apply false
 }
