@@ -1,6 +1,6 @@
 plugins {
     id("com.android.application")
-    kotlin("android")
+    id("org.jetbrains.kotlin.android")
 }
 
 android {
@@ -14,14 +14,9 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
-
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
         }
     }
 }
