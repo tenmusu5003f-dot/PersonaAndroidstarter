@@ -19,25 +19,24 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # Android SDK を入れてライセンスにも同意
+      # Android SDK を入れてライセンス同意まで一気に
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      # Gradle 本体を入れてパスに通す（wrapper いらない）
+      # Gradle 本体を Actions 側で用意（wrapper 不要）
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.9
 
-      # 実ビルド（プロジェクトルートで app モジュールをビルド）
+      # ルート settings.gradle.kts で :app を _roads/kt/app に向けている前提
       - name: Build debug APK
         run: |
-          gradle -p . :app:assembleDebug --no-daemon --stacktrace
+          gradle :app:assembleDebug --no-daemon --stacktrace
 
       - name: Upload debug APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-debug.apk
-          # app モジュールは _roads/kt/app 配下にある想定
-          path: _roads/kt/app/build/outputs/apk/debug/app-debug.apk
+          path: _roads/kt/app/build/outputs/apk/debug/*.apk
