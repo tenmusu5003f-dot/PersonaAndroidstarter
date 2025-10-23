@@ -1,5 +1,4 @@
-// region ro
-adsV1_osbridge
+// region roadsV1_osbridge
 object roadsV1_OSBridge {
     fun greet(persona: String): String = roadsV1_randomGreeting(persona)
     fun command(persona: String, cmd: String, payload: String? = null): String =
