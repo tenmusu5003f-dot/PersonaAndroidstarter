@@ -1,3 +1,7 @@
+plugins {
+    id 'org.jetbrains.kotlin.android'
+}
+
 // --- roadsV1: simple duplicate scan (source filenames) ---
 tasks.register("scanDuplicateSourceNames") {
     group = "verification"
