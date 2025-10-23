@@ -1,6 +1,3 @@
-- name: Clean and Build Debug APK
-  run: ./gradlew clean assembleDebug --stacktrace --no-daemon
-
 name: Android CI
 
 on:
