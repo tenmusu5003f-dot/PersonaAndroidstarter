@@ -2,7 +2,7 @@ name: Android CI
 
 on:
   push:
-    branches: [ main ]   # ← デフォルトブランチ名に合わせて必要なら変更
+    branches: [ main ]
   pull_request:
 
 jobs:
@@ -17,22 +17,23 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+      # Gradle をリポジトリ内の wrapper ではなく、Actions側で用意して使う
+      - name: Set up Gradle 8.9 (no wrapper)
+        uses: gradle/gradle-build-action@v3
+        with:
+          gradle-version: 8.9
 
       - name: Clean build
-        run: ./gradlew clean --no-daemon
+        run: gradle --no-daemon clean
 
+      # モジュール名が app ならそのまま。違う場合は :<モジュール名>:assembleDebug に変更
       - name: Build debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace --info
+        run: gradle :app:assembleDebug --stacktrace --info
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug.apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/*.apk
