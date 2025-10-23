@@ -1,20 +1,13 @@
-- name: Make gradlew executable
-        run: chmod +x ./gradle
-
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace --info
-
-name: Android CI (assembleDebug)
+name: Android CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]   # デフォルトブランチ名が別なら変更（例: master）
   pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,14 +15,20 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: 17
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Clean & assembleDebug
-        run: ./gradlew --no-daemon clean :app:assembleDebug
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Clean build
+        run: ./gradlew --no-daemon clean
+
+      - name: Build debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace --info
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
