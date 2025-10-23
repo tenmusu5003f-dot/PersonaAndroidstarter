@@ -1,4 +1,3 @@
-// <project-root>/settings.gradle.kts
 pluginManagement {
     repositories {
         gradlePluginPortal()
@@ -16,11 +15,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "PersonaAndroidstarter"
-include(":app")
-project(":app").projectDir = file("_roads/kt/app")
 
-rootProject.name = "PersonaAndroidstarter"
-
-// ← ここ重要！ app の実パスを明示
+// :app モジュールを _roads/kt/app に割り当て
 include(":app")
 project(":app").projectDir = file("_roads/kt/app")
