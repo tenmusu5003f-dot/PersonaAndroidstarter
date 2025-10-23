@@ -1,3 +1,19 @@
+// region roadsV1_memory
+data class roadsV1_MemoryItem(
+    val persona: String,
+    val type: String,
+    val content: String,
+    val ts: Long = System.currentTimeMillis()
+)
+
+object roadsV1_MemoryStore {
+    private val buf = mutableListOf<roadsV1_MemoryItem>()
+    @Synchronized fun log(item: roadsV1_MemoryItem) { buf += item }
+    @Synchronized fun last(n: Int = 10, persona: String? = null): List<roadsV1_MemoryItem> =
+        buf.asReversed().filter { persona == null || it.persona == persona }.take(n)
+}
+// endregion
+
 package core
 
 import android.content.Context
