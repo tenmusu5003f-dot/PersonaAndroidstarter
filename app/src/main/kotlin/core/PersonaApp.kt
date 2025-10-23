@@ -17,3 +17,26 @@ class PersonaApp : Application() {
         Log.i("PersonaApp", "PersonaCore ready.")
     }
 }
+
+// --- roadsV1: plugin bootstrap (append) ---
+import core.plugins.EchoPlugin
+import core.tools.DuplicateGuard
+
+private fun registerPersonaPlugins() {
+    // 先勝ち or 後勝ちの方針を選択（重複に強い）
+    DuplicateGuard.configure(policy = DuplicateGuard.Policy.KEEP_FIRST)
+
+    // ここでプラグインを順次登録（将来は自動スキャンに差し替え可能）
+    DuplicateGuard.safeRegister(EchoPlugin())
+
+    // 例：追加するときはここに並べる（重複はGuardが対処）
+    // DuplicateGuard.safeRegister(AbyssPlugin())
+    // DuplicateGuard.safeRegister(LilithPlugin())
+}
+
+override fun onCreate() {
+    super.onCreate()
+    Log.i("PersonaApp", "Persona system initialized successfully.")
+    initPersonaCore()
+    registerPersonaPlugins() // ← ここで登録
+}
