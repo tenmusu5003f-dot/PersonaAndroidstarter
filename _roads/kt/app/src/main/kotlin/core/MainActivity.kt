@@ -1,43 +1,15 @@
-package core
+package com.example.persona
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.appcompat.app.AppCompatActivity
+import com.example.persona.databinding.ActivityMainBinding
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityMainBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            PersonaApp()
-        }
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        binding.message.text = "Hello Persona!"
     }
-}
-
-@Composable
-fun PersonaApp() {
-    var message by remember { mutableStateOf("ようこそ、Personaへ。") }
-
-    MaterialTheme {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            Scaffold(
-                topBar = {
-                    TopAppBar(title = { Text("Persona Starter") })
-                }
-            ) { padding ->
-                Text(
-                    text = message,
-                    modifier = androidx.compose.ui.Modifier.padding(padding)
-                )
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PersonaPreview() {
-    PersonaApp()
 }
