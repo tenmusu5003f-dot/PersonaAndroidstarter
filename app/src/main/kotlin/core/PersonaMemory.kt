@@ -1,69 +1,52 @@
 package core
 
 import android.content.Context
-import androidx.datastore.preferences.core.*
-import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
+import androidx.compose.runtime.mutableStateMapOf
 
 /**
- * PersonaMemory
+ * PersonaMemory.kt
  * -------------------------------------------------
- * シンプルかつ安全なデータ永続化レイヤー。
- * - 設定や内部状態を保存
- * - 高速キャッシュとしても機能
- * - RoomやFirebaseより軽量で、端末負荷が低い
+ * 各ペルソナの記録・好感度・体力などを簡易永続化するクラス。
+ * SharedPreferences ベースで軽量・安全。
+ * オフラインでも利用可能。
  */
+class PersonaMemory(private val personaName: String) {
 
-object PersonaMemory {
-
-    private const val STORE_NAME = "persona_memory"
-    private lateinit var context: Context
-    private val Context.dataStore by preferencesDataStore(name = STORE_NAME)
-
-    private var initialized = false
-
-    fun initialize(ctx: Context) {
-        if (initialized) return
-        context = ctx.applicationContext
-        initialized = true
+    private val prefs by lazy {
+        appContext.getSharedPreferences("persona_memory", Context.MODE_PRIVATE)
     }
 
-    fun isReady(): Boolean = initialized
+    private val cache = mutableStateMapOf<String, Int>()
 
-    /** 🔹 値を保存 */
-    fun putString(key: String, value: String) = runBlocking {
-        val dataStoreKey = stringPreferencesKey(key)
-        context.dataStore.edit { prefs ->
-            prefs[dataStoreKey] = value
+    fun getStat(key: String): Int {
+        return cache[key] ?: prefs.getInt("$personaName.$key", 50).also {
+            cache[key] = it
         }
     }
 
-    /** 🔹 値を取得（非同期で監視） */
-    fun getStringFlow(key: String): Flow<String?> {
-        val dataStoreKey = stringPreferencesKey(key)
-        return context.dataStore.data.map { prefs ->
-            prefs[dataStoreKey]
+    fun updateStat(key: String, delta: Int) {
+        val newValue = (getStat(key) + delta).coerceIn(0, 100)
+        cache[key] = newValue
+        prefs.edit().putInt("$personaName.$key", newValue).apply()
+    }
+
+    fun clearAll() {
+        prefs.edit().apply {
+            prefs.all.keys.filter { it.startsWith("$personaName.") }.forEach { remove(it) }
+        }.apply()
+        cache.clear()
+    }
+
+    companion object {
+        /**
+         * PersonaMemory 全体を初期化。
+         * Application から最初に appContext を設定しておくこと。
+         */
+        lateinit var appContext: Context
+            private set
+
+        fun init(context: Context) {
+            appContext = context.applicationContext
         }
-    }
-
-    /** 🔹 即座に値を取得（同期ブロック） */
-    fun getStringNow(key: String): String? = runBlocking {
-        var result: String? = null
-        val dataStoreKey = stringPreferencesKey(key)
-        context.dataStore.data.map { prefs ->
-            prefs[dataStoreKey]
-        }.collect { result = it }
-        result
-    }
-
-    /** 🔹 全データ削除 */
-    fun clear() = runBlocking {
-        context.dataStore.edit { it.clear() }
-    }
-
-    private fun log(msg: String) {
-        println("[PersonaMemory] $msg")
     }
 }
