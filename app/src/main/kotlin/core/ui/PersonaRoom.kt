@@ -1,104 +1,131 @@
 package core.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.Image
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.graphics.Color
-import core.ui.theme.PersonaTheme
+import androidx.compose.ui.unit.dp
+import core.PersonaMemory
+import core.PersonaCore
 
 /**
  * PersonaRoom
  * -------------------------------------------------
- * 各ペルソナAIが存在する「部屋」。
- * - チャット入力欄付き
- * - レスポンス表示とアニメーション余地あり
- * - 後に音声出力・Live2D・動的背景追加予定
+ * 各ペルソナ専用ルーム。
+ * - 会話ログ・好感度・学習進行度などを表示
+ * - PersonaMemory と PersonaCore を接続
  */
 @Composable
 fun PersonaRoom(
     personaName: String,
     onBack: () -> Unit
 ) {
-    PersonaTheme {
-        var input by remember { mutableStateOf("") }
-        var response by remember { mutableStateOf("ようこそ、$personaName の部屋へ。") }
+    val memory = remember { PersonaMemory(personaName) }
+    var affection by remember { mutableStateOf(memory.getStat("affection")) }
+    var energy by remember { mutableStateOf(memory.getStat("energy")) }
+    var message by remember { mutableStateOf("") }
 
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+    LaunchedEffect(Unit) {
+        message = PersonaCore.generateGreeting(personaName)
+    }
+
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = personaName,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Button(onClick = onBack) {
-                        Text("Back")
-                    }
+                Text(
+                    text = personaName,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                TextButton(onClick = onBack) {
+                    Text("Back")
                 }
+            }
 
-                // AI Response area
-                Box(
+            // Persona image
+            val avatar = runCatching {
+                painterResource(id = android.R.drawable.sym_def_app_icon)
+            }.getOrNull()
+            avatar?.let {
+                Image(
+                    painter = it,
+                    contentDescription = personaName,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .padding(vertical = 20.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = response,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
+                        .size(180.dp)
+                        .padding(8.dp)
+                )
+            }
+
+            // Message bubble
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
+            ) {
+                Text(
+                    text = message,
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+
+            // Status
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("Affection: $affection")
+                LinearProgressIndicator(
+                    progress = affection / 100f,
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .padding(vertical = 4.dp)
+                )
+                Text("Energy: $energy")
+                LinearProgressIndicator(
+                    progress = energy / 100f,
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .padding(vertical = 4.dp)
+                )
+            }
+
+            // Action buttons
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Button(onClick = {
+                    memory.updateStat("affection", 5)
+                    affection = memory.getStat("affection")
+                    message = PersonaCore.reply(personaName, "praise")
+                }) {
+                    Text("Talk ❤")
                 }
-
-                // Input area
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    BasicTextField(
-                        value = input,
-                        onValueChange = { input = it },
-                        textStyle = TextStyle(fontSize = 16.sp, color = Color.Black),
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(8.dp)
-                            .height(48.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                shape = MaterialTheme.shapes.small
-                            )
-                            .padding(horizontal = 8.dp, vertical = 10.dp)
-                    )
-                    Button(onClick = {
-                        response = "「$input」…なるほど、そう思うんですね。"
-                        input = ""
-                    }) {
-                        Text("Send")
-                    }
+                Button(onClick = {
+                    memory.updateStat("energy", 10)
+                    energy = memory.getStat("energy")
+                    message = PersonaCore.reply(personaName, "gift")
+                }) {
+                    Text("Gift 🎁")
                 }
             }
         }
