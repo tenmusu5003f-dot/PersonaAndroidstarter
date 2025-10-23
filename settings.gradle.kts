@@ -2,10 +2,17 @@ include(":app")
 project(":app").projectDir = file("kt/app")
 
 pluginManagement {
-    repositories { gradlePluginPortal(); google(); mavenCentral() }
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
 }
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories { google(); mavenCentral() }
+    repositories {
+        google()
+        mavenCentral()
+    }
 }
 rootProject.name = "PersonaAndroidstarter"
