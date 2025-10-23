@@ -1,8 +1,5 @@
 - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-        - name: Clean Gradle cache
-        run: rm -rf ~/.gradle/caches
+        run: chmod +x ./gradle
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace --info
