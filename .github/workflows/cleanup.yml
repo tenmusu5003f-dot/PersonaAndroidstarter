@@ -1,0 +1,39 @@
+name: Repo Cleanup
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect and remove unnecessary files
+        run: |
+          echo "🧹 Scanning and removing unnecessary files..."
+          find . -type f \( \
+            -name "*.zip" \
+            -o -path "./_roads/*" \
+            -o -name "README-size.md" \
+            -o -name "README-voice.md" \
+            -o -name "アプリデバッグ.zip" \
+            -o -name "ゲート" \
+            -o -name "資産" \
+            -o -name "ペルソナ" \
+            -o -name "ログイン" \
+          \) -print -delete
+
+      - name: Commit cleanup changes
+        run: |
+          git config user.name "Cleanup Bot"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -m "chore(cleanup): auto-remove redundant files" || echo "No changes to commit"
+          git push
