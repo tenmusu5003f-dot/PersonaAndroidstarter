@@ -1,3 +1,5 @@
+run: ./gradlew assembleDebug --no-daemon --stacktrace
+
 name: Android CI
 
 on:
