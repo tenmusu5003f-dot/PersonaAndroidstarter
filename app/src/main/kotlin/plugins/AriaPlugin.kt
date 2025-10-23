@@ -39,3 +39,7 @@ class AriaPlugin : roadsV1_PersonaPlugin {
         }
     }
 }
+
+import core.lyrics.LyricGenerator
+...
+val lyrics = LyricGenerator.composeSong("夜空")
