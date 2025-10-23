@@ -1,3 +1,9 @@
+- name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --stacktrace --info
+
 name: Android CI (assembleDebug)
 
 on:
