@@ -1,4 +1,3 @@
-
 package core.plugins
 
 import core.Capability
