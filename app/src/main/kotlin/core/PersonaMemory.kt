@@ -66,3 +66,44 @@ class PersonaMemory(private val personaName: String) {
         }
     }
 }
+
+package core
+
+/**
+ * PersonaMemory.kt
+ * ペルソナの短期・長期記憶を管理します。
+ * 各ペルソナごとにコンテキストと履歴を保持し、
+ * roadsV1_PluginRegistry で登録されたプラグインから参照されます。
+ */
+
+object roadsV1_MemoryStore {
+    private val shortTerm = mutableMapOf<String, MutableList<String>>()
+    private val longTerm = mutableMapOf<String, MutableList<String>>()
+
+    fun remember(personaId: String, message: String, persist: Boolean = false) {
+        val target = if (persist) longTerm else shortTerm
+        val list = target.getOrPut(personaId) { mutableListOf() }
+        list += message
+    }
+
+    fun recall(personaId: String, limit: Int = 5, fromLongTerm: Boolean = false): List<String> {
+        val source = if (fromLongTerm) longTerm else shortTerm
+        return source[personaId]?.takeLast(limit) ?: emptyList()
+    }
+
+    fun forget(personaId: String, all: Boolean = false) {
+        if (all) {
+            shortTerm.remove(personaId)
+            longTerm.remove(personaId)
+        } else {
+            shortTerm[personaId]?.clear()
+        }
+    }
+
+    fun exportSnapshot(personaId: String): Map<String, List<String>> {
+        return mapOf(
+            "shortTerm" to (shortTerm[personaId] ?: emptyList()),
+            "longTerm" to (longTerm[personaId] ?: emptyList())
+        )
+    }
+}
