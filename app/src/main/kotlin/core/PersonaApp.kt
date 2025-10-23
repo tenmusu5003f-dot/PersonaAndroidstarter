@@ -40,3 +40,13 @@ override fun onCreate() {
     initPersonaCore()
     registerPersonaPlugins() // ← ここで登録
 }
+
+import core.plugins.HermesPlugin
+
+private fun registerPersonaPlugins() {
+    DuplicateGuard.configure(policy = DuplicateGuard.Policy.KEEP_FIRST)
+
+    // 基本プラグイン登録
+    DuplicateGuard.safeRegister(EchoPlugin())
+    DuplicateGuard.safeRegister(HermesPlugin()) // ← ここ追加
+}
