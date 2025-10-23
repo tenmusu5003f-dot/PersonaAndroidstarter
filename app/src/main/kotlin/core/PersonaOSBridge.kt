@@ -1,3 +1,12 @@
+// region roadsV1_osbridge
+object roadsV1_OSBridge {
+    fun greet(persona: String): String = roadsV1_randomGreeting(persona)
+    fun command(persona: String, cmd: String, payload: String? = null): String =
+        roadsV1_PluginRegistry.get(persona)?.onCommand(cmd, payload)
+            ?: roadsV1_replyFor(cmd, "共通")
+}
+// endregion
+
 package core
 
 import android.app.Application
