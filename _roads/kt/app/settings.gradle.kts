@@ -1,3 +1,6 @@
+include(":app")
+project(":app").projectDir = file("_roads/kt/app")
+
 pluginManagement {
     repositories {
         gradlePluginPortal()
