@@ -8,7 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,31 +18,23 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # ★ Android SDK を用意（ライセンス同意＆必要コンポーネント）
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Install SDK packages
-        run: |
-          sdkmanager --install "platform-tools" \
-                              "platforms;android-34" \
-                              "build-tools;34.0.0" \
-                              "cmdline-tools;latest"
-          yes | sdkmanager --licenses
-
-      # Gradleのキャッシュと計測
-      - name: Set up Gradle
+      # ← Wrapper検証を使わず、Gradle本体を入れる
+      - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.9
+          cache-read-only: false   # キャッシュ障害でも実行は継続
 
-      # ★ まずプロジェクト認識確認（settingsの不整合を即発見）
-      - name: Sanity check (gradle projects)
-        run: gradle projects --no-daemon
+      # Unix実行権限は不要（gradleコマンドを使うため）
+      # - name: Grant execute permission for gradlew
+      #   run: chmod +x ./gradlew
 
       - name: Build debug APK
-        run: gradle :app:assembleDebug --no-daemon --stacktrace --info --warning-mode all
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
 
       - name: Upload debug APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-debug.apk
-          path: _roads/kt/app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
