@@ -1,3 +1,14 @@
+// region roadsV1_opening_impl
+object roadsV1_OpeningEffects {
+    fun plan(deviceTier: Int): List<roadsV1_Effect> = roadsV1_EffectPolicy.openingFor(deviceTier)
+
+    // 疑似レンダラ（今はログだけ。後で実装を差し替え）
+    fun render(plan: List<roadsV1_Effect>, log: (String) -> Unit = ::println) {
+        plan.forEach { log("opening:${it.id} x${it.weight}") }
+    }
+}
+// endregion
+
 package core
 
 import androidx.compose.animation.core.*
