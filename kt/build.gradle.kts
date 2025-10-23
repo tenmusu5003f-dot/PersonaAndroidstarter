@@ -1,20 +1,33 @@
-include(":app")
-project(":app").projectDir = file("kt/app")
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+}
 
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        google()
-        mavenCentral()
+android {
+    namespace = "com.persona.androidstarter"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.persona.androidstarter"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
     }
 }
 
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-    }
+dependencies {
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.core:core-ktx:1.12.0")
 }
-
-rootProject.name = "PersonaAndroidstarter"
