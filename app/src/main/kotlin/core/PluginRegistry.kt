@@ -6,7 +6,7 @@ import core.plugins.*
  * PluginRegistry
  *
  * PersonaCore と各プラグインを連結する中継ハブ。
- * 必要に応じて動的ロード・アンロードも可能。
+ * 各ペルソナAIの登録・呼び出し・コマンド実行を管理。
  */
 object PluginRegistry {
 
