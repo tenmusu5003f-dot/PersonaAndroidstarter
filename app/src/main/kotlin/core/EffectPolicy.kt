@@ -1,3 +1,17 @@
+// region roadsV1_effects_policy
+data class roadsV1_Effect(val id: String, val weight: Int = 1)
+
+object roadsV1_EffectPolicy {
+    fun openingFor(deviceTier: Int): List<roadsV1_Effect> = when {
+        deviceTier >= 3 -> listOf(
+            roadsV1_Effect("fadeIn",2), roadsV1_Effect("logoPulse",1), roadsV1_Effect("particle",1)
+        )
+        deviceTier == 2 -> listOf(roadsV1_Effect("fadeIn",2), roadsV1_Effect("logoPulse",1))
+        else -> listOf(roadsV1_Effect("fadeIn",1))
+    }
+}
+// endregion
+
 package core
 
 /**
