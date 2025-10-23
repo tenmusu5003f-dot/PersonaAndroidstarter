@@ -28,6 +28,8 @@ jobs:
             -o -name "資産" \
             -o -name "ペルソナ" \
             -o -name "ログイン" \
+            -o -name "*.tmp" \
+            -o -name "*.bak" \
           \) -print -delete
 
       - name: Commit cleanup changes
@@ -35,5 +37,5 @@ jobs:
           git config user.name "Cleanup Bot"
           git config user.email "actions@github.com"
           git add -A
-          git commit -m "chore(cleanup): auto-remove redundant files" || echo "No changes to commit"
+          git commit -m "chore(cleanup): auto-remove redundant, temp, and backup files" || echo "No changes to commit"
           git push
