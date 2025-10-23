@@ -1,3 +1,4 @@
+// <project-root>/settings.gradle.kts
 pluginManagement {
     repositories {
         gradlePluginPortal()
@@ -13,6 +14,10 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
+
+rootProject.name = "PersonaAndroidstarter"
+include(":app")
+project(":app").projectDir = file("_roads/kt/app")
 
 rootProject.name = "PersonaAndroidstarter"
 
