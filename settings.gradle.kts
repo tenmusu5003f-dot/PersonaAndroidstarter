@@ -1,5 +1,5 @@
 include(":app")
-project(":app").projectDir = file("kt/app")
+project(":app").projectDir = file("kt")
 
 pluginManagement {
     repositories {
