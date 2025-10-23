@@ -4,6 +4,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
   build:
@@ -22,24 +23,20 @@ jobs:
       - name: Gradle をセットアップ（キャッシュ）
         uses: gradle/actions/setup-gradle@v3
 
-      # ★ ここが “金庫→主機 ドッキング”
-      - name: Install escape engine (sync protected Gradle files)
+      - name: ルート Gradle ファイル同期
         run: |
-          cp -f .github/engine/root-build.gradle.kts ./build.gradle.kts
-          cp -f .github/engine/settings.gradle.kts ./settings.gradle.kts
-          cp -f .github/engine/gradle.properties ./gradle.properties
+          cp -f ".github/workflows/build.gradle.kts" ./build.gradle.kts
+          cp -f ".github/workflows/settings.gradle.kts" ./settings.gradle.kts
+          cp -f ".github/workflows/gradle.properties" ./gradle.properties
+          rsync -a ".github/workflows/engine/" ./
+          chmod +x ./gradlew
+          ./gradlew --version
 
-      - name: gradlew を実行可能にする
-        run: chmod +x ./gradlew
+      - name: ビルド
+        run: ./gradlew assembleDebug --stacktrace
 
-      - name: クリーン
-        run: ./gradlew clean
-
-      - name: デバッグAPKをビルド
-        run: ./gradlew :app:assembleDebug --stacktrace --info
-
-      - name: APKをアップロード
+      - name: APK アップロード
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug.apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: debug-apk
+          path: app/build/outputs/apk/debug/*.apk
