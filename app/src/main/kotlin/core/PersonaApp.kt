@@ -50,3 +50,16 @@ private fun registerPersonaPlugins() {
     DuplicateGuard.safeRegister(EchoPlugin())
     DuplicateGuard.safeRegister(HermesPlugin()) // ← ここ追加
 }
+
+import core.plugins.NoxPlugin
+
+private fun registerPersonaPlugins() {
+    DuplicateGuard.configure(policy = DuplicateGuard.Policy.KEEP_FIRST)
+
+    // 既存
+    DuplicateGuard.safeRegister(EchoPlugin())
+    DuplicateGuard.safeRegister(HermesPlugin())
+
+    // 追加：Nox（夜間ガード）
+    DuplicateGuard.safeRegister(NoxPlugin())
+}
