@@ -1,81 +1,59 @@
 package core
 
-import android.app.Application
+import kotlin.random.Random
 
 /**
- * Persona システムの中枢。
- * - 初期化/終了のライフサイクル
- * - 端末能力の取得 → 方針(EffectPolicy) 決定 → 演出(OpeningEffects) の選択
- * - 軽量なサービス登録/取得（必要最小限のDI）
+ * PersonaCore.kt
+ * -------------------------------------------------
+ * 各ペルソナの会話・反応・感情シミュレーションを担う中核。
+ * PersonaMemory と連動して、キャラの性格に応じた応答を返す。
  */
 object PersonaCore {
 
-    private var initialized = false
-    private var appContext: Application? = null
-
-    /** 環境設定（後で外部から差し替え可能） */
-    data class PersonaConfig(
-        val featureOpening: Boolean = true, // 起動演出の有効/無効
-        val diagnostics: Boolean = false    // 追加ログ
+    private val greetings = mapOf(
+        "Abyss" to listOf("……また来たの？", "静かにしなさい、眠いの。"),
+        "Lilith" to listOf("ふふっ、会いたかった？", "あなた、今日もいい香りがするわ。"),
+        "Echo" to listOf("おかえりっ！待ってたんだよ！", "今日もがんばろっ！"),
+        "Hermes" to listOf("よう、元気だったか？", "はは、遅かったじゃねえか。"),
+        "Nox" to listOf("……闇が囁いている。", "静寂こそが友。")
     )
 
-    private var config: PersonaConfig = PersonaConfig()
+    private val replies = mapOf(
+        "praise" to listOf("ふふ、照れるなぁ。", "もっと褒めて？", "……やるじゃない。"),
+        "gift" to listOf("ありがと！大事にする！", "……別に、嬉しいわけじゃないけど。", "あなたって、ほんと優しいね。")
+    )
 
-    /** 簡易サービスレジストリ（必要になったら proper DI に置換） */
-    private val services: MutableMap<String, Any> = mutableMapOf()
+    /**
+     * 起動時の挨拶を生成。
+     */
+    fun generateGreeting(persona: String): String {
+        val pool = greetings[persona] ?: listOf("……こんにちは。")
+        return pool.random()
+    }
 
-    fun initialize(app: Application, cfg: PersonaConfig = PersonaConfig()) {
-        if (initialized) return
-        appContext = app
-        config = cfg
-
-        // 端末能力の取得（仮ロジック：後で実装）
-        val caps = DeviceCaps(
-            ramMb = 4096,
-            cpuCores = Runtime.getRuntime().availableProcessors(),
-            refreshHz = 60
-        )
-
-        // 方針決定
-        val tier = EffectPolicy.tier(caps)
-
-        // 起動演出（有効な場合のみ）
-        if (config.featureOpening) {
-            val effect = OpeningEffects.forTier(tier)
-            // 実際の再生はUI側で受け取って実行する想定（ここでは決定のみ）
-            registerService("opening.effect", effect)
+    /**
+     * コマンド（praise / gift）に応じた応答を生成。
+     */
+    fun reply(persona: String, command: String): String {
+        val base = replies[command]?.random() ?: "……。"
+        val affection = Random.nextInt(10, 100)
+        val variation = when {
+            affection > 80 -> "（顔を赤らめている）"
+            affection < 30 -> "（少し怒っている）"
+            else -> ""
         }
-
-        initialized = true
-        if (config.diagnostics) log("PersonaCore initialized. tier=$tier caps=$caps")
+        return "$base $variation"
     }
 
-    fun isInitialized(): Boolean = initialized
-
-    fun shutdown() {
-        services.clear()
-        appContext = null
-        initialized = false
-    }
-
-    // ---- Service Registry ----
-
-    @Suppress("UNCHECKED_CAST")
-    fun <T : Any> getService(key: String): T? = services[key] as? T
-
-    fun registerService(key: String, instance: Any) {
-        services[key] = instance
-    }
-
-    fun removeService(key: String) {
-        services.remove(key)
-    }
-
-    // ---- Helpers ----
-
-    private fun log(msg: String) {
-        // 後で統一ロガーに差し替え
-        println("[PersonaCore] $msg")
+    /**
+     * 共通サービス呼び出しの模擬関数。
+     */
+    fun <T> getService(serviceName: String): T? {
+        @Suppress("UNCHECKED_CAST")
+        return when (serviceName) {
+            "system.battery.level" -> Random.nextInt(50, 100) as T
+            "system.time.hour" -> (0..23).random() as T
+            else -> null
+        }
     }
 }
-```0
