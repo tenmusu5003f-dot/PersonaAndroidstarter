@@ -10,30 +10,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: チェックアウト
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: JDK 17 をセットアップ
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: 17
 
-      # Gradle をリポジトリ内の wrapper ではなく、Actions側で用意して使う
-      - name: Set up Gradle 8.9 (no wrapper)
-        uses: gradle/gradle-build-action@v3
-        with:
-          gradle-version: 8.9
+      - name: Gradle をセットアップ（キャッシュ）
+        uses: gradle/actions/setup-gradle@v3
 
-      - name: Clean build
-        run: gradle --no-daemon clean
+      # ★ ここが “金庫→主機 ドッキング”
+      - name: Install escape engine (sync protected Gradle files)
+        run: |
+          cp -f .github/engine/root-build.gradle.kts ./build.gradle.kts
+          cp -f .github/engine/settings.gradle.kts ./settings.gradle.kts
+          cp -f .github/engine/gradle.properties ./gradle.properties
 
-      # モジュール名が app ならそのまま。違う場合は :<モジュール名>:assembleDebug に変更
-      - name: Build debug APK
-        run: gradle :app:assembleDebug --stacktrace --info
+      - name: gradlew を実行可能にする
+        run: chmod +x ./gradlew
 
-      - name: Upload debug APK
+      - name: クリーン
+        run: ./gradlew clean
+
+      - name: デバッグAPKをビルド
+        run: ./gradlew :app:assembleDebug --stacktrace --info
+
+      - name: APKをアップロード
         uses: actions/upload-artifact@v4
         with:
           name: app-debug.apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
