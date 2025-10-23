@@ -1,3 +1,15 @@
+// region roadsV1_security
+sealed class roadsV1_SecLevel { object Low: roadsV1_SecLevel(); object High: roadsV1_SecLevel() }
+object roadsV1_SecurityPolicy {
+    private val blockedHigh = setOf("payment/auto", "debug/leak")
+    fun allow(action: String, level: roadsV1_SecLevel): Boolean =
+        when(level) {
+            is roadsV1_SecLevel.High -> action !in blockedHigh
+            is roadsV1_SecLevel.Low  -> !action.startsWith("payment/")
+        }
+}
+// endregion
+
 package core
 
 import android.app.Application
