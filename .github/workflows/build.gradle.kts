@@ -1,11 +1,12 @@
-// ルート用の極小 Gradle ビルド（CIが読み込むだけの足場）
-plugins {
-    // ここは空でもOK。依存解決だけ行う
-}
+plugins {}
 
 allprojects {
     repositories {
         google()
         mavenCentral()
     }
+}
+
+tasks.register<Delete>("clean") {
+    delete(rootProject.buildDir)
 }
