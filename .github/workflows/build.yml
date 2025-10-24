@@ -42,8 +42,8 @@ jobs:
           # 1) settings.gradle.kts（ルート直下）
           cat > settings.gradle.kts <<'EOF'
 
-- name: Ensure Gradle root (settings & root build)
-  run: |
+　- name: Ensure Gradle root (settings & root build)
+　  run: |
     # 1) settings.gradle.kts（ルート直下）
     cat > settings.gradle.kts <<'EOF'
     pluginManagement {
