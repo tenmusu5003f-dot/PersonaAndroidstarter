@@ -870,3 +870,121 @@ override fun onStart() {
         }
     }
 }
+
+package com.persona.androidstarter.security
+
+import android.app.Application
+import android.util.Log
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+
+/**
+ * SecurityHub
+ * - 起動時に全ガードを実行して「安全状態」を配信
+ * - Net/TTS/Crypto/Assets を一元初期化
+ * - Persona側は SecurityHub からの「承認済みデータ」しか使わない
+ */
+object SecurityHub {
+    private const val TAG = "SecurityHub"
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    data class State(
+        val safe: Boolean = false,
+        val signatureValid: Boolean = false,
+        val tamperOk: Boolean = false,
+        val rootOk: Boolean = true,
+        val assetsOk: Boolean = true,
+        val netReady: Boolean = false,
+        val ttsReady: Boolean = false
+    )
+    private val _state = MutableStateFlow(State())
+    val state: StateFlow<State> = _state
+
+    fun init(app: Application) {
+        scope.launch {
+            Log.i(TAG, "init…")
+            val sOk = SignatureGuard.verifySelf(app)
+            val tOk = TamperGuard.checkBuildFlags(app)
+            val rOk = RootGuard.quickScan(app)
+            val cOk = CryptoVault.ensureInit(app)
+            val aOk = AssetGuard.verifyHashes(app)
+            val nOk = NetGuard.pinSetup(app)
+            val ttsOk = TTSPrewarm.warm(app)
+
+            val safeAll = sOk && tOk && rOk && cOk && aOk
+            _state.value = State(
+                safe = safeAll,
+                signatureValid = sOk,
+                tamperOk = tOk,
+                rootOk = rOk,
+                assetsOk = aOk,
+                netReady = nOk,
+                ttsReady = ttsOk
+            )
+            Log.i(TAG, "ready: ${_state.value}")
+        }
+    }
+
+    fun isSafe(): Boolean = state.value.safe
+}
+
+package com.persona.androidstarter.security
+
+import android.util.Base64
+import java.security.MessageDigest
+
+/**
+ * SecureChannel
+ * - 中枢→各部屋 への **片方向** データパイプ
+ * - 署名/ハッシュ付きメッセージのみ通す
+ */
+object SecureChannel {
+
+    data class Envelope(
+        val topic: String,            // ex: "persona/echo/status"
+        val payload: ByteArray,       // 実データ（JSON/CBOR等）
+        val sha256_hex: String        // ペイロードのSHA-256（hex）
+    )
+
+    /** 中枢が作る：payload のハッシュを付与 */
+    fun wrap(topic: String, payload: ByteArray): Envelope {
+        val hex = sha256(payload)
+        return Envelope(topic, payload, hex)
+    }
+
+    /** 各部屋で受け取る：ハッシュ一致＋Hubがsafeな場合のみOK */
+    fun verifyAndUnwrap(env: Envelope): ByteArray? {
+        if (!SecurityHub.isSafe()) return null
+        val ok = sha256(env.payload).equals(env.sha256_hex, ignoreCase = true)
+        return if (ok) env.payload else null
+    }
+
+    private fun sha256(bytes: ByteArray): String {
+        val md = MessageDigest.getInstance("SHA-256")
+        val d = md.digest(bytes)
+        return d.joinToString("") { "%02x".format(it) }
+    }
+}
+
+package core.plugins
+
+import com.persona.androidstarter.security.SecurityHub
+
+/**
+ * GuardedPluginRegistry
+ * - SecurityHub.safe==true のときだけ登録を許可
+ * - DuplicateGuard と併用推奨
+ */
+object GuardedPluginRegistry {
+    private val plugins = mutableListOf<Any>() // 型は実装側で安全に扱う
+
+    fun safeRegister(p: Any): Boolean {
+        if (!SecurityHub.isSafe()) return false
+        if (plugins.any { it::class == p::class }) return false
+        plugins += p
+        return true
+    }
+
+    fun all(): List<Any> = plugins.toList()
+}
