@@ -71,6 +71,8 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
 
+implementation("androidx.core:core-splashscreen:1.0.1")
+
 // app/build.gradle.kts の android { ... } に入れる一部
 android {
   // 省略...
