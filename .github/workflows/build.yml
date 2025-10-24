@@ -1,6 +1,85 @@
-- name: Bootstrap Gradle 8.7 (no wrapper)
-  run: |
-    curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o g.zip
-    unzip -q g.zip
-    ./gradle-8.7/bin/gradle -p kt --no-daemon --no-parallel --max-workers=1 \
-      --stacktrace clean :app:assembleDebug
+name: Build (no-wrapper, safe)
+on:
+  push:
+    branches: [ main ]
+    paths-ignore: [ "**.md", "**.txt" ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  actions: write     # artifact upload に必要
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept SDK licenses & install
+        run: |
+          sdkmanager --licenses <<< "y"
+          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+      # Gradle 本体をZIPで取得して直叩き（wrapperに依存しない）
+      - name: Bootstrap Gradle 8.7
+        run: |
+          curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o g.zip
+          unzip -q g.zip
+
+      # 物理配置をその場でマップ（kt/app でも app でもOK）
+      - name: Ensure settings.gradle.kts (map :app)
+        run: |
+          if [ ! -f settings.gradle.kts ]; then
+            cat > settings.gradle.kts <<'EOF'
+pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+dependencyResolutionManagement {
+  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+  repositories { google(); mavenCentral() }
+}
+rootProject.name = "PersonaAndroidstarter"
+include(":app")
+EOF
+          fi
+          if [ -d kt/app ]; then
+            echo 'project(":app").projectDir = file("kt/app")' >> settings.gradle.kts
+          fi
+
+      - name: Quick diag
+        run: |
+          ./gradle-8.7/bin/gradle --version
+          ./gradle-8.7/bin/gradle projects
+
+      - name: Compile only (smoke test)
+        run: |
+          ./gradle-8.7/bin/gradle --no-daemon --no-parallel --max-workers=1 \
+            --stacktrace :app:compileDebugKotlin
+
+      - name: Assemble Debug
+        run: |
+          ./gradle-8.7/bin/gradle --no-daemon --no-parallel --max-workers=1 \
+            --stacktrace :app:assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            kt/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: warn
