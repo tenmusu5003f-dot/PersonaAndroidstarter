@@ -51,3 +51,21 @@ override fun onStart() {
         }
     }
 }
+
+override fun onStart() {
+    super.onStart()
+    val nav = (supportFragmentManager
+        .findFragmentById(R.id.nav_host) as NavHostFragment).navController
+
+    ui.launch {
+        val ok = withContext(Dispatchers.IO) { FastBoot.launch(this@MainActivity) }
+        if (!ok) {
+            TTSPrewarm.say("セキュリティチェックに失敗しました")
+            AuthGate.enforce(nav, session)
+        } else {
+            TTSPrewarm.say("すべてのシステムが正常です")
+            if (session.isSignedIn()) nav.navigate(R.id.homeFragment)
+            else nav.navigate(R.id.loginFragment)
+        }
+    }
+}
