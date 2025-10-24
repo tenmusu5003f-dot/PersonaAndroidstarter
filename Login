@@ -1,9 +1,610 @@
+// =====================================
+// 🚀 Persona Android Starter - FastBoot Header
+// =====================================
+
+import android.content.Context
+import kotlinx.coroutines.*
+import android.util.Log
+
+object FastBoot {
+    private const val TAG = "FastBoot"
+
+    suspend fun launch(ctx: Context): Boolean = coroutineScope {
+        val start = System.currentTimeMillis()
+        Log.i(TAG, "⚡ Boot sequence start")
+
+        // 並列処理ブロック（すべて同時に起動）
+        val results = awaitAll(
+            async { SignatureGuard.verifySelf(ctx) },
+            async { TamperGuard.checkBuildFlags() },
+            async { RootGuard.quickScan(ctx) },
+            async { CryptoVault.warmup(ctx) },
+            async { AssetGuard.verifyHashes(ctx) },
+            async { NetGuard.pinSetup(ctx) },
+            async { Prewarm.warmTTS(ctx) },
+        )
+
+        val ok = results.all { it }
+        val time = System.currentTimeMillis() - start
+        Log.i(TAG, "⚙️ Boot complete: $ok ($time ms)")
+        return@coroutineScope ok
+    }
+}
+
+// security/BootOrchestrator.kt
+package com.persona.androidstarter.security
+
+import android.content.Context
+import android.util.Log
+import kotlinx.coroutines.*
+
+/**
+ * BootOrchestrator
+ * 起動時に複数の「ガード」を並列で実行して起動可否を判定するオーケストレータ。
+ * - 必須ガード／任意ガードの扱いはここで拡張可能
+ */
+
+object BootOrchestrator {
+  private const val TAG = "BootOrchestrator"
+
+  /**
+   * runAll: 起動時に安全チェックを実行する。
+   * - タイムアウトや個別失敗は呼び出し側でフォールバックさせられる。
+   * - 戻り値: true = 全部OK (推奨処理)、false = 何か失敗 (フォールバック)
+   */
+  suspend fun runAll(ctx: Context, timeoutMs: Long = 5_000): Boolean = coroutineScope {
+    try {
+      val deferreds = listOf(
+        async { SignatureGuard.verifySelf(ctx) },         // 署名検証（必須）
+        async { TamperGuard.checkBuildFlags(ctx) },      // 改ざんフラグ検出（必須）
+        async { RootGuard.quickScan(ctx) },              // ルート簡易検知（任意）
+        async { CryptoVault.ensureInit(ctx) },           // 鍵ストア初期化（必須）
+        async { AssetGuard.verifyHashes(ctx) },         // アセットハッシュ検証（推奨）
+        async { NetGuard.pinSetup(ctx) },               // 証明書ピン等（任意）
+        async { TTSPrewarm.warm(ctx) }                  // TTS等プリウォーム（任意）
+      )
+
+      // 全体タイムアウトを守る
+      withTimeout(timeoutMs) {
+        val results = deferreds.awaitAll()
+        // 全部 true なら true。個別に optional を許容するロジックはここを拡張
+        return@coroutineScope results.all { it }
+      }
+    } catch (e: Exception) {
+      Log.w(TAG, "boot checks failed: ${e.message}")
+      return@coroutineScope false
+    }
+  }
+}
+
 // security/SessionManager.kt
 package com.persona.androidstarter.security
+
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 
+/**
+ * SessionManager
+ * EncryptedSharedPreferences を使ってセッション（簡易ログイン状態）を管理する。
+ * 注意: 本番の認証はサーバ側チェックやトークン運用を行ってください。
+ */
+
+class SessionManager(ctx: Context) {
+  private val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+  private val prefs = EncryptedSharedPreferences.create(
+    "persona.secure",
+    masterKeyAlias,
+    ctx,
+    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+  )
+
+  fun isSignedIn(): Boolean = prefs.getBoolean("signed_in", false)
+  fun signIn() = prefs.edit().putBoolean("signed_in", true).apply()
+  fun signOut() = prefs.edit().clear().apply()
+
+  // optional: store small metadata safely
+  fun putString(key: String, value: String) = prefs.edit().putString(key, value).apply()
+  fun getString(key: String, default: String? = null): String? = prefs.getString(key, default)
+}
+
+// security/AuthGate.kt
+package com.persona.androidstarter.security
+
+import androidx.navigation.NavController
+import com.persona.androidstarter.nav.Routes
+
+/**
+ * AuthGate
+ * NavController を通して未ログインなら Login に寄せる簡易ガード。
+ * MainActivity 側で session を作成して呼ぶ想定。
+ */
+
+object AuthGate {
+  fun enforce(nav: NavController, session: SessionManager) {
+    if (!session.isSignedIn()) {
+      nav.navigate(Routes.Login) {
+        popUpTo(Routes.Root) { inclusive = false }
+        launchSingleTop = true
+      }
+    }
+  }
+
+// security/AssetGuard.kt
+package com.persona.androidstarter.security
+
+import android.content.Context
+import android.util.Log
+import org.json.JSONObject
+import java.security.MessageDigest
+
+/**
+ * AssetGuard
+ * assets/expected-hashes.json を参照してアセットの SHA-256 を検証する。
+ * expected-hashes.json は CI 等で生成して assets に入れておく想定。
+ *
+ * JSON 形式:
+ * {
+ *   "scripts/prologue.script": "abcdef1234...",
+ *   "voices/aria.voice": "abcd..."
+ * }
+ */
+
+object AssetGuard {
+  private const val TAG = "AssetGuard"
+  private const val EXPECTED_FILE = "expected-hashes.json"
+
+  fun verifyHashes(ctx: Context): Boolean {
+    return try {
+      val expected = loadExpected(ctx) ?: run {
+        Log.w(TAG, "no expected-hashes.json found — skipping asset guard")
+        return true // 生成されてない場合はフォールバック許容
+      }
+
+      val assetManager = ctx.assets
+      val keys = expected.keys()
+      while (keys.hasNext()) {
+        val name = keys.next()
+        try {
+          assetManager.open(name).use { ins ->
+            val actual = sha256(ins)
+            val expectedHash = expected.getString(name)
+            if (!actual.equals(expectedHash, ignoreCase = true)) {
+              Log.w(TAG, "asset hash mismatch: $name")
+              return false
+            }
+          }
+        } catch (e: Exception) {
+          Log.w(TAG, "asset missing or unreadable: $name")
+          return false
+        }
+      }
+      true
+    } catch (e: Throwable) {
+      Log.e(TAG, "asset guard error: ${e.message}")
+      false
+    }
+  }
+
+  private fun loadExpected(ctx: Context): JSONObject? {
+    return try {
+      ctx.assets.open(EXPECTED_FILE).use { ins ->
+        val s = ins.readBytes().toString(Charsets.UTF_8)
+        JSONObject(s)
+      }
+    } catch (e: Exception) {
+      null
+    }
+  }
+
+  private fun sha256(ins: java.io.InputStream): String {
+    val md = MessageDigest.getInstance("SHA-256")
+    ins.use { input ->
+      val buf = ByteArray(8192)
+      var r: Int
+      while (input.read(buf).also { r = it } > 0) md.update(buf, 0, r)
+    }
+    return md.digest().joinToString("") { "%02x".format(it) }
+  }
+}
+}
+
+// security/SignatureGuard.kt
+package com.persona.androidstarter.security
+
+import android.content.Context
+import android.content.pm.PackageManager
+import android.util.Log
+
+/**
+ * SignatureGuard
+ * APK の署名を確認する雛形。
+ * - ここではアプリ自身の署名を取得して簡易チェックを行う。
+ * - 本番では公的な鍵や遠隔署名照合などを導入してください。
+ */
+
+object SignatureGuard {
+  private const val TAG = "SignatureGuard"
+
+  fun verifySelf(ctx: Context): Boolean {
+    return try {
+      val packageInfo = ctx.packageManager.getPackageInfo(ctx.packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+      // Android 9+ での署名情報取得に合わせてチェックを行う（簡易）
+      val signatures = packageInfo.signingInfo?.apkContentsSigners
+      if (signatures == null || signatures.isEmpty()) {
+        Log.w(TAG, "no signatures found")
+        return false
+      }
+      // TODO: ここで既知の署名ハッシュと比較する等の実装を入れる
+      true
+    } catch (e: Exception) {
+      Log.e(TAG, "signature verify failed: ${e.message}")
+      false
+    }
+  }
+}
+
+// security/SignatureGuard.kt
+package com.persona.androidstarter.security
+
+import android.content.Context
+import android.content.pm.PackageManager
+import android.util.Log
+
+/**
+ * SignatureGuard
+ * APK の署名を確認する雛形。
+ * - ここではアプリ自身の署名を取得して簡易チェックを行う。
+ * - 本番では公的な鍵や遠隔署名照合などを導入してください。
+ */
+
+object SignatureGuard {
+  private const val TAG = "SignatureGuard"
+
+  fun verifySelf(ctx: Context): Boolean {
+    return try {
+      val packageInfo = ctx.packageManager.getPackageInfo(ctx.packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+      // Android 9+ での署名情報取得に合わせてチェックを行う（簡易）
+      val signatures = packageInfo.signingInfo?.apkContentsSigners
+      if (signatures == null || signatures.isEmpty()) {
+        Log.w(TAG, "no signatures found")
+        return false
+      }
+      // TODO: ここで既知の署名ハッシュと比較する等の実装を入れる
+      true
+    } catch (e: Exception) {
+      Log.e(TAG, "signature verify failed: ${e.message}")
+      false
+    }
+  }
+}
+
+// security/TamperGuard.kt
+package com.persona.androidstarter.security
+
+import android.content.Context
+import android.util.Log
+
+/**
+ * TamperGuard
+ * ビルドフラグや検査の痕跡を確認する簡易チェック。
+ * - デバッグビルドか、改変されたリソースの痕跡を検出するための場所
+ */
+
+object TamperGuard {
+  private const val TAG = "TamperGuard"
+
+  fun checkBuildFlags(ctx: Context): Boolean {
+    return try {
+      val isDebuggable = (ctx.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+      if (isDebuggable) {
+        Log.w(TAG, "app is debuggable — treat as potentially tampered")
+        // 開発中は true にしておく。リリースでは false を期待する
+      }
+      true
+    } catch (e: Exception) {
+      Log.e(TAG, "tamper guard error: ${e.message}")
+      false
+    }
+  }
+}
+
+// security/RootGuard.kt
+package com.persona.androidstarter.security
+
+import android.content.Context
+import android.util.Log
+import java.io.File
+
+/**
+ * RootGuard
+ * ルート化の簡易検知（100%ではない）。
+ * - より厳密な検知は su の挙動確認や known root tool のチェックを追加すること
+ */
+
+object RootGuard {
+  private const val TAG = "RootGuard"
+  private val suPaths = listOf(
+    "/system/bin/su", "/system/xbin/su", "/sbin/su", "/vendor/bin/su"
+  )
+
+  fun quickScan(ctx: Context): Boolean {
+    return try {
+      for (p in suPaths) {
+        if (File(p).exists()) {
+          Log.w(TAG, "su found at $p")
+          return false
+        }
+      }
+      // さらに build tags での判定なども可能
+      true
+    } catch (e: Exception) {
+      Log.e(TAG, "root guard error: ${e.message}")
+      true
+    }
+  }
+}
+
+// security/CryptoVault.kt
+package com.persona.androidstarter.security
+
+import android.content.Context
+import android.util.Log
+import androidx.security.crypto.MasterKeys
+
+/**
+ * CryptoVault
+ * 鍵ストア初期化などをまとめる場所。実際の鍵管理はプロジェクト要件で拡張してください。
+ */
+
+object CryptoVault {
+  private const val TAG = "CryptoVault"
+
+  fun ensureInit(ctx: Context): Boolean {
+    return try {
+      // MasterKeys.getOrCreate は内部で鍵を作る（端末安全領域に保管される）
+      val master = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+      Log.d(TAG, "master key ready: $master")
+      true
+    } catch (e: Exception) {
+      Log.e(TAG, "crypto init failed: ${e.message}")
+      false
+    }
+  }
+}
+
+// security/NetGuard.kt
+package com.persona.androidstarter.security
+
+import android.content.Context
+import android.util.Log
+
+/**
+ * NetGuard
+ * ネットワーク系の初期化（証明書ピン等）。ここは SDK / 実装に合わせて修正してください。
+ */
+
+object NetGuard {
+  private const val TAG = "NetGuard"
+
+  fun pinSetup(ctx: Context): Boolean {
+    return try {
+      // ここで OkHttp のピンニングやカスタム TrustManager を構成するなどの処理を行う
+      // 今はダミーで true を返す（任意のチェックなので失敗でもフォールバック可）
+      true
+    } catch (e: Exception) {
+      Log.e(TAG, "netguard error: ${e.message}")
+      false
+    }
+  }
+}
+
+// security/TTSPrewarm.kt
+package com.persona.androidstarter.security
+
+import android.content.Context
+import kotlinx.coroutines.*
+
+/**
+ * TTSPrewarm
+ * 外部 TTS の事前読み込みを非同期で行う。失敗してもフォールバックする。
+ * 実装は使っている TTS SDK に合わせて中身を書き換えてください。
+ */
+
+object TTSPrewarm {
+  fun warm(ctx: Context) {
+    GlobalScope.launch(Dispatchers.IO) {
+      try {
+        // 例: 外部 SDK の初期化やボイス一覧取得など
+        // ExternalTTS.init(ctx); ExternalTTS.preload("default")
+      } catch (e: Exception) {
+        // 失敗しても起動を止めない
+      }
+    }
+  }
+}
+
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("androidx.navigation:navigation-fragment-ktx:2.8.3")
+    implementation("androidx.navigation:navigation-ui-ktx:2.8.3")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+}
+
+<androidx.fragment.app.FragmentContainerView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_host"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:name="androidx.navigation.fragment.NavHostFragment"
+    app:navGraph="@navigation/nav_graph"
+    app:defaultNavHost="true" />
+
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/homeFragment">
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.persona.androidstarter.entrance.LoginFragment"
+        android:label="Login" />
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.persona.androidstarter.feature.home.HomeFragment"
+        android:label="Home" />
+</navigation>
+
+package com.persona.androidstarter.nav
+object Routes {
+    const val Root = "root"
+    const val Login = "login"
+    const val Home  = "home"
+}
+
+package com.persona.androidstarter
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.navigation.findNavController
+import androidx.navigation.fragment.NavHostFragment
+import com.persona.androidstarter.security.*
+import com.persona.androidstarter.nav.Routes
+import kotlinx.coroutines.*
+
+class MainActivity : AppCompatActivity() {
+    private lateinit var session: SessionManager
+    private val ui = MainScope()
+
+    override fun onCreate(b: Bundle?) {
+        super.onCreate(b)
+        setContentView(R.layout.activity_main)
+        session = SessionManager(this)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val nav = (supportFragmentManager
+            .findFragmentById(R.id.nav_host) as NavHostFragment).navController
+
+        // 起動ガードを並列実行 → 失敗時はログインに寄せる
+        ui.launch {
+            val ok = withContext(Dispatchers.IO) { BootOrchestrator.runAll(this@MainActivity) }
+            if (!ok) {
+                AuthGate.enforce(nav, session) // 未サインイン or ガード失敗 → Login
+            } else {
+                if (session.isSignedIn()) {
+                    nav.navigate(R.id.homeFragment)
+                } else {
+                    nav.navigate(R.id.loginFragment)
+                }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        ui.cancel()
+        super.onDestroy()
+    }
+}
+
+package com.persona.androidstarter.entrance
+
+import android.os.Bundle
+import android.view.*
+import androidx.fragment.app.Fragment
+import com.persona.androidstarter.security.SessionManager
+import androidx.navigation.fragment.findNavController
+import com.persona.androidstarter.R
+
+class LoginFragment : Fragment() {
+    override fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?): View {
+        val v = View.inflate(requireContext(), android.R.layout.simple_list_item_1, null)
+        v.setOnClickListener {
+            SessionManager(requireContext()).signIn()
+            findNavController().navigate(R.id.homeFragment)
+        }
+        return v
+    }
+}
+
+package com.persona.androidstarter.feature.home
+
+import android.os.Bundle
+import android.view.*
+import androidx.fragment.app.Fragment
+import android.widget.TextView
+
+class HomeFragment : Fragment() {
+    override fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?): View {
+        return TextView(requireContext()).apply { text = "🚀 Home" }
+    }
+}
+
+{
+  "scripts/prologue.script": "deadbeef",
+  "voices/aria.voice": "deadbeef"
+}
+
+<application
+    android:usesCleartextTraffic="false">
+    <!-- 必要に応じて networkSecurityConfig を設定 -->
+</application>
+
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("androidx.navigation:navigation-fragment-ktx:2.8.3")
+    implementation("androidx.navigation:navigation-ui-ktx:2.8.3")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+}
+
+package com.persona.androidstarter.security
+
+import android.content.Context
+import android.content.pm.PackageManager
+import android.util.Log
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKeys
+import kotlinx.coroutines.*
+import org.json.JSONObject
+import java.io.File
+import java.security.MessageDigest
+
+/** ===========================
+ *  🚀 FastBoot + Guards 一式
+ *  =========================== */
+
+object FastBoot {
+    private const val TAG = "FastBoot"
+    suspend fun launch(ctx: Context, timeoutMs: Long = 5_000): Boolean = coroutineScope {
+        try {
+            val t0 = System.currentTimeMillis()
+            val results = withTimeout(timeoutMs) {
+                awaitAll(
+                    async { SignatureGuard.verifySelf(ctx) },     // 必須
+                    async { TamperGuard.checkBuildFlags(ctx) },   // 必須(開発中は常にtrue)
+                    async { RootGuard.quickScan(ctx) },           // 任意
+                    async { CryptoVault.ensureInit(ctx) },        // 必須
+                    async { AssetGuard.verifyHashes(ctx) },       // 推奨
+                    async { NetGuard.pinSetup(ctx) },             // 任意
+                    async { TTSPrewarm.warm(ctx); true }          // 任意（失敗しても続行）
+                )
+            }
+            val ok = results.all { it }
+            Log.i(TAG, "Boot complete=$ok in ${System.currentTimeMillis()-t0} ms")
+            ok
+        } catch (e: Exception) {
+            Log.w(TAG, "boot error: ${e.message}")
+            false
+        }
+    }
+}
+
+/** セッション（暗号化Preferences） */
 class SessionManager(ctx: Context) {
     private val master = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
     private val pref = EncryptedSharedPreferences.create(
@@ -16,71 +617,256 @@ class SessionManager(ctx: Context) {
     fun signOut() = pref.edit().clear().apply()
 }
 
-// security/AuthGate.kt
-package com.persona.androidstarter.security
-import androidx.navigation.NavController
-import com.persona.androidstarter.nav.Routes
-
+/** 未ログインならLoginへ寄せる */
 object AuthGate {
-    fun enforce(nav: NavController, session: SessionManager) {
+    fun enforce(nav: androidx.navigation.NavController, session: SessionManager) {
         if (!session.isSignedIn()) {
-            nav.navigate(Routes.Login) {
-                popUpTo(Routes.Root) { inclusive = false }
+            nav.navigate(com.persona.androidstarter.R.id.loginFragment) {
+                popUpTo(com.persona.androidstarter.R.id.homeFragment) { inclusive = false }
                 launchSingleTop = true
             }
         }
     }
 }
 
-// nav/Routes.kt
-package com.persona.androidstarter.nav
-object Routes {
-    const val Root = "root"
-    const val Login = "login"
-    const val Home = "home"
+/** 署名チェック（雛形） */
+object SignatureGuard {
+    private const val TAG = "SignatureGuard"
+    fun verifySelf(ctx: Context): Boolean = try {
+        val info = ctx.packageManager.getPackageInfo(
+            ctx.packageName, PackageManager.GET_SIGNING_CERTIFICATES
+        )
+        val ok = !info.signingInfo?.apkContentsSigners.isNullOrEmpty()
+        if (!ok) Log.w(TAG, "no signatures")
+        ok
+    } catch (e: Exception) { Log.e(TAG,"${e.message}"); false }
 }
 
-<!-- res/navigation/nav_graph.xml -->
-<navigation xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/nav_graph" app:startDestination="@id/homeFragment">
-    <fragment android:id="@+id/loginFragment"
-        android:name="com.persona.androidstarter.entrance.LoginFragment"
-        android:label="Login"/>
-    <fragment android:id="@+id/homeFragment"
-        android:name="com.persona.androidstarter.feature.home.HomeFragment"
-        android:label="Home"/>
-</navigation>
+/** デバッグ/改変フラグ（雛形） */
+object TamperGuard {
+    fun checkBuildFlags(ctx: Context): Boolean = try {
+        // 開発中は true で通す。リリースでは厳格に。
+        true
+    } catch (e: Exception) { false }
+}
 
-// MainActivity.kt
-package com.persona.androidstarter
-import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.findNavController
-import androidx.navigation.fragment.NavHostFragment
-import com.persona.androidstarter.security.AuthGate
-import com.persona.androidstarter.security.SessionManager
+/** ルート簡易検知 */
+object RootGuard {
+    private val suPaths = listOf("/system/bin/su","/system/xbin/su","/sbin/su","/vendor/bin/su")
+    fun quickScan(@Suppress("UNUSED_PARAMETER") ctx: Context): Boolean = try {
+        suPaths.none { File(it).exists() }
+    } catch (_: Exception) { true }
+}
+
+/** 鍵初期化 */
+object CryptoVault {
+    fun ensureInit(@Suppress("UNUSED_PARAMETER") ctx: Context): Boolean = try {
+        MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC); true
+    } catch (_: Exception) { false }
+}
+
+/** アセットハッシュ検証（assets/expected-hashes.json を参照・未配置は通過） */
+object AssetGuard {
+    private fun loadExpected(ctx: Context): JSONObject? = try {
+        ctx.assets.open("expected-hashes.json").use { ins ->
+            JSONObject(ins.readBytes().toString(Charsets.UTF_8))
+        }
+    } catch (_: Exception) { null }
+
+    fun verifyHashes(ctx: Context): Boolean = try {
+        val expected = loadExpected(ctx) ?: return true
+        val am = ctx.assets
+        val keys = expected.keys()
+        while (keys.hasNext()) {
+            val name = keys.next()
+            am.open(name).use { ins ->
+                val actual = sha256(ins)
+                val want = expected.getString(name)
+                if (!actual.equals(want, true)) return false
+            }
+        }
+        true
+    } catch (_: Exception) { false }
+
+    private fun sha256(ins: java.io.InputStream): String {
+        val md = MessageDigest.getInstance("SHA-256")
+        val buf = ByteArray(8192); var r: Int
+        while (ins.read(buf).also { r = it } > 0) md.update(buf, 0, r)
+        return md.digest().joinToString("") { "%02x".format(it) }
+    }
+}
+
+/** ネットワーク初期化（ピンニング等を後で実装） */
+object NetGuard { fun pinSetup(@Suppress("UNUSED_PARAMETER") ctx: Context) = true }
+
+/** TTSプリウォーム（SDKに合わせて中身を入れてね） */
+object TTSPrewarm { fun warm(@Suppress("UNUSED_PARAMETER") ctx: Context) { /* no-op */ } }
 
 class MainActivity : AppCompatActivity() {
     private lateinit var session: SessionManager
+    private val ui = MainScope()
+
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
         setContentView(R.layout.activity_main)
         session = SessionManager(this)
-        // NavHost は activity_main.xml に配置しておく（FragmentContainerView）
     }
+
     override fun onStart() {
         super.onStart()
         val nav = (supportFragmentManager
             .findFragmentById(R.id.nav_host) as NavHostFragment).navController
-        AuthGate.enforce(nav, session)   // ★ここで入口ガード
+
+        ui.launch {
+            val ok = withContext(Dispatchers.IO) { FastBoot.launch(this@MainActivity) }
+            if (!ok) AuthGate.enforce(nav, session)
+            else if (session.isSignedIn()) nav.navigate(R.id.homeFragment)
+                 else nav.navigate(R.id.loginFragment)
+        }
+    }
+
+    override fun onDestroy() { ui.cancel(); super.onDestroy() }
+}
+
+{
+  "scripts/prologue.script": "deadbeef"
+}
+
+object NetGuard {
+    private const val TAG = "NetGuard"
+    lateinit var client: okhttp3.OkHttpClient
+
+    fun pinSetup(ctx: Context): Boolean = try {
+        val host = "api.example.com" // ←あなたのAPIドメイン
+        val pins = listOf(
+            // openssl x509 -pubkey -noout -in cert.pem | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64
+            "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        )
+        val pinner = okhttp3.CertificatePinner.Builder().apply {
+            pins.forEach { add(host, it) }
+        }.build()
+        client = okhttp3.OkHttpClient.Builder()
+            .certificatePinner(pinner)
+            .build()
+        Log.i(TAG, "NetGuard ready for $host")
+        true
+    } catch (e: Exception) {
+        Log.e(TAG, "NetGuard error: ${e.message}")
+        false
+    }
+
+    fun get(url: String): String? = try {
+        val req = okhttp3.Request.Builder().url(url).build()
+        client.newCall(req).execute().use { it.body?.string() }
+    } catch (e: Exception) {
+        Log.e(TAG, "GET failed: ${e.message}")
+        null
     }
 }
 
-<!-- res/layout/activity_main.xml -->
-<androidx.fragment.app.FragmentContainerView
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/nav_host"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    app:navGraph="@navigation/nav_graph"
-    android:name="androidx.navigation.fragment.NavHostFragment"/>
+object TTSPrewarm {
+    private const val TAG = "TTSPrewarm"
+    private var tts: android.speech.tts.TextToSpeech? = null
+
+    fun warm(ctx: Context): Boolean {
+        return try {
+            tts = android.speech.tts.TextToSpeech(ctx) {
+                if (it == android.speech.tts.TextToSpeech.SUCCESS) {
+                    tts?.language = java.util.Locale.JAPANESE
+                    tts?.speak("起動チェック完了です", android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "boot")
+                    Log.i(TAG, "TTS ready")
+                } else Log.w(TAG, "TTS init failed: $it")
+            }
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "TTS warm error: ${e.message}")
+            false
+        }
+    }
+
+    fun say(text: String) {
+        tts?.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "say")
+    }
+
+    fun release() { tts?.shutdown() }
+}
+
+object CryptoVault {
+    private const val TAG = "CryptoVault"
+    private val charset = Charsets.UTF_8
+
+    fun ensureInit(ctx: Context): Boolean = try {
+        MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        Log.i(TAG, "Crypto ready")
+        true
+    } catch (e: Exception) {
+        Log.e(TAG, "Crypto init failed: ${e.message}")
+        false
+    }
+
+    fun encrypt(text: String, key: SecretKeySpec): String {
+        val cipher = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, key)
+        val iv = cipher.iv
+        val enc = cipher.doFinal(text.toByteArray(charset))
+        return android.util.Base64.encodeToString(iv + enc, android.util.Base64.NO_WRAP)
+    }
+
+    fun decrypt(base64: String, key: SecretKeySpec): String {
+        val all = android.util.Base64.decode(base64, android.util.Base64.NO_WRAP)
+        val iv = all.copyOfRange(0, 12)
+        val body = all.copyOfRange(12, all.size)
+        val cipher = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(javax.crypto.Cipher.DECRYPT_MODE, key, javax.crypto.spec.GCMParameterSpec(128, iv))
+        return String(cipher.doFinal(body), charset)
+    }
+}
+
+object CryptoVault {
+    private const val TAG = "CryptoVault"
+    private val charset = Charsets.UTF_8
+
+    fun ensureInit(ctx: Context): Boolean = try {
+        MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        Log.i(TAG, "Crypto ready")
+        true
+    } catch (e: Exception) {
+        Log.e(TAG, "Crypto init failed: ${e.message}")
+        false
+    }
+
+    fun encrypt(text: String, key: SecretKeySpec): String {
+        val cipher = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, key)
+        val iv = cipher.iv
+        val enc = cipher.doFinal(text.toByteArray(charset))
+        return android.util.Base64.encodeToString(iv + enc, android.util.Base64.NO_WRAP)
+    }
+
+    fun decrypt(base64: String, key: SecretKeySpec): String {
+        val all = android.util.Base64.decode(base64, android.util.Base64.NO_WRAP)
+        val iv = all.copyOfRange(0, 12)
+        val body = all.copyOfRange(12, all.size)
+        val cipher = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(javax.crypto.Cipher.DECRYPT_MODE, key, javax.crypto.spec.GCMParameterSpec(128, iv))
+        return String(cipher.doFinal(body), charset)
+    }
+}
+
+override fun onStart() {
+    super.onStart()
+    val nav = (supportFragmentManager
+        .findFragmentById(R.id.nav_host) as NavHostFragment).navController
+
+    ui.launch {
+        val ok = withContext(Dispatchers.IO) { FastBoot.launch(this@MainActivity) }
+        if (!ok) {
+            TTSPrewarm.say("セキュリティチェックに失敗しました")
+            AuthGate.enforce(nav, session)
+        } else {
+            TTSPrewarm.say("すべてのシステムが正常です")
+            if (session.isSignedIn()) nav.navigate(R.id.homeFragment)
+            else nav.navigate(R.id.loginFragment)
+        }
+    }
+}
