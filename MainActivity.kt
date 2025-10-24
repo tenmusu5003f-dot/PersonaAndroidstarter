@@ -1,8 +1,8 @@
-package com.persona.sample
+package com.example.persona
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.persona.sample.databinding.ActivityMainBinding
+import com.example.persona.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
