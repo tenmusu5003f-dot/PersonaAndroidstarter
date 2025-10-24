@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- アプリ名と共通の文字列定義 -->
-    <string name="app_name">PersonaAndroidStarter</string>
-    <string name="welcome_message">ようこそ、ペルソナの世界へ。</string>
-    <string name="loading">読み込み中…</string>
-    <string name="error_generic">エラーが発生しました。</string>
-</resources>
