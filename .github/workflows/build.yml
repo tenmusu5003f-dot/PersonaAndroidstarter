@@ -77,11 +77,16 @@ steps:
 
           # 2) ルート build.gradle.kts（プラグインの版を宣言）
           cat > build.gradle.kts <<'EOF'
-plugins {
-  id("com.android.application") version "8.1.0" apply false
-  kotlin("android") version "1.9.22" apply false
-}
-EOF
+
+
+  - name: Create build.gradle.kts
+    run: |
+      cat > build.gradle.kts <<'EOF'
+      plugins {
+          id("com.android.application") version "8.1.0" apply false
+          kotlin("android") version "1.9.22" apply false
+      }
+      EOF
 
           echo "----- settings.gradle.kts -----"
           sed -n '1,120p' settings.gradle.kts
@@ -93,14 +98,14 @@ EOF
         run: |
           if [ ! -f settings.gradle.kts ]; then
             cat > settings.gradle.kts <<'EOF'
-pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
-dependencyResolutionManagement {
-  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-  repositories { google(); mavenCentral() }
-}
-rootProject.name = "PersonaAndroidstarter"
-include(":app")
-EOF
+     pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+     dependencyResolutionManagement {
+     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+     repositories { google(); mavenCentral() }
+     }
+     rootProject.name = "PersonaAndroidstarter"
+     include(":app")
+     EOF
 
 - name: Build Debug APK
         run: |
