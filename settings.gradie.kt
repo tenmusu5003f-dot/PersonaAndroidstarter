@@ -1,4 +1,12 @@
 pluginManagement {
+    repositories {
+        google()       // ← これがないと Android Plugin が見つからない！
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+pluginManagement {
   repositories { gradlePluginPortal(); google(); mavenCentral() }
 }
 dependencyResolutionManagement {
