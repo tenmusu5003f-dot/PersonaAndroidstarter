@@ -10,3 +10,26 @@
     }
   ]
 }
+
+{
+  "modules": [
+    {
+      "id": "core-assets",
+      "version": "1.1.0",
+      "files": [
+        {
+          "path": "scripts/prologue.script",
+          "sha256": "cccccccc...",
+          "size": 1100,
+          "url": "https://cdn.example.com/persona/core-assets/scripts/prologue.script"
+        },
+        {
+          "path": "voices/aria.voice",
+          "sha256": "dddddddd...",
+          "size": 2100,
+          "url": "https://cdn.example.com/persona/core-assets/voices/aria.voice"
+        }
+      ]
+    }
+  ]
+}
