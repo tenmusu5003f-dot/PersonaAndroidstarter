@@ -1,0 +1,6 @@
+// feature/home/HomeFragment.kt
+package com.persona.androidstarter.feature.home
+import androidx.fragment.app.Fragment
+import com.persona.androidstarter.R
+
+class HomeFragment: Fragment(R.layout.fragment_home)
