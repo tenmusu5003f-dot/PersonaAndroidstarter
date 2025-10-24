@@ -1,0 +1,12 @@
+{
+  "modules": [
+    {
+      "id": "core-assets",
+      "version": "1.0.0",
+      "files": [
+        { "path": "scripts/prologue.script", "sha256": "aaaaaaaa...", "size": 1024 },
+        { "path": "voices/aria.voice",       "sha256": "bbbbbbbb...", "size": 2048 }
+      ]
+    }
+  ]
+}
