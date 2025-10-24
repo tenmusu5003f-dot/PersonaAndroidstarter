@@ -30,50 +30,25 @@ jobs:
           yes | sdkmanager --licenses
           sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
-      # ⑤ settings.gradle.kts（ルート直下）を用意
-      - name: Ensure settings.gradle.kts (root)
-        run: |
-          cat > settings.gradle.kts <<'EOF'
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.name = "PersonaAndroidstarter"
-          include(":app")
-          EOF
+    　- name: Set up Android SDK
+  　　　uses: android-actions/setup-android@v3
 
-          # 実体が kt/app の場合は :app をそこへマップ
-          if [ -d kt/app ]; then
-            sed -i 's|include(":app")|include(":app"); project(":app").projectDir = file("kt/app")|' settings.gradle.kts
-          fi
+　　　- name: Accept SDK licenses & install
+  　　　run: |
+   　　　 yes | sdkmanager --licenses
+  　　　  sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
-      # ⑥ ルート build.gradle.kts（プラグインの版だけ宣言）
-      - name: Create root build.gradle.kts
-        run: |
-          cat > build.gradle.kts <<'EOF'
-          plugins {
-              id("com.android.application") version "8.1.0" apply false
-              kotlin("android") version "1.9.22" apply false
-          }
-          EOF
+　　　# Gradle 8.2 を取得して展開
+　　　- name: Download Gradle 8.2
+  　　　run: |
+    　　　curl -sLo gradle.zip https://services.gradle.org/distributions/gradle-8.2-bin.zip
+    　　　unzip -q gradle.zip
+    　　　　./gradle-8.2/bin/gradle --version
 
-      # ⑦ Gradle 8.2 を ZIP で取得（ラッパー使わない）
-      - name: Download Gradle 8.2
-        run: |
-          curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o gradle.zip
-          unzip -q gradle.zip
-          echo "$PWD/gradle-8.2/bin" >> $GITHUB_PATH
-          gradle --version
+　　　# ここでビルド（← 重要：system の `gradle` ではなくパス指定）
+　　　- name: Build Debug APK
+  　　　run: |
+    　　　./gradle-8.2/bin/gradle --no-daemon --stacktrace :app:assembleDebug
 
       # ⑧ ビルド（:app が実体。kt/app でも上のマップで吸収）
       - name: Build Debug APK
