@@ -68,7 +68,7 @@ jobs:
           EOF
 
       # ⑦ Gradle 8.2 を ZIP で取得（ラッパー使わない）
-      - name: Download Gradle 8.7
+      - name: Download Gradle 8.2
         run: |
           curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o gradle.zip
           unzip -q gradle.zip
