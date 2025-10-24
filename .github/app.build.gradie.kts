@@ -27,3 +27,27 @@ dependencies {
   implementation("androidx.security:security-crypto:1.1.0-alpha06")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
+
+// app/build.gradle.kts の android { ... } に入れる一部
+android {
+  // 省略...
+  packagingOptions {
+    resources {
+      // APKに含めたくないパターン
+      excludes += setOf("**/*.apk", "**/*.aab", "**/*.secret", "**/*.bak")
+    }
+  }
+
+  // assets に先ほど作る出力を追加
+  sourceSets["main"].assets.srcDir("$buildDir/generated/assets/included_assets")
+}
+
+// ルートに近い箇所にタスクを追加
+val includeExtraAssets by tasks.registering(Copy::class) {
+  val extList = listOf("script", "tts", "voice", "json") // 含めたい拡張子
+  from("$rootDir/external_assets")
+  include(extList.map { "**/*.$it" })
+  into(file("$buildDir/generated/assets/included_assets"))
+}
+
+tasks.named("preBuild") { dependsOn(includeExtraAssets) }
