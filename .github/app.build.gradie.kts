@@ -1,7 +1,5 @@
-- name: Grant execute permission for Gradle Wrapper
-  run: chmod +x ./gradlew
-- name: Build with Gradle
-  run: ./gradlew build
+- name: Setup Gradle
+  uses: gradle/actions/setup-gradle@v3
 
 plugins {
     id("com.android.application")
