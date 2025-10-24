@@ -1,0 +1,14 @@
+{
+  "packId":"story1",
+  "version":3,
+  "priority":50,
+  "enabled":true,
+  "tags":["story","ja"],
+  "scripts":[
+    {"file":"prologue.script","triggers":["start"]},
+    {"file":"chapter1.part1.script","triggers":["start:chapter1"]},
+    {"file":"chapter1.part2.script","triggers":["cut:1"]},
+    {"file":"eventA.script","triggers":["flag:eventA"]}
+  ],
+  "limits":{"maxScriptSizeKB":64,"execTimeoutMs":3000}
+}
