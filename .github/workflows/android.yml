@@ -1,40 +1,30 @@
-name: Android CI
-
+name: build
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # ← Wrapper検証を使わず、Gradle本体を入れる
-      - name: Set up Gradle 8.9
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: 8.9
-          cache-read-only: false   # キャッシュ障害でも実行は継続
-
-      # Unix実行権限は不要（gradleコマンドを使うため）
-      # - name: Grant execute permission for gradlew
-      #   run: chmod +x ./gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
 
       - name: Build debug APK
-        run: gradle :app:assembleDebug --no-daemon --stacktrace
+        run: ./gradlew :app:assembleDebug --stacktrace
 
-      - name: Upload debug APK
+      - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug.apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
