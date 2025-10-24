@@ -12,7 +12,7 @@ cat -n settings.gradle.kts 2>/dev/null | sed -n '1,80p'
     ls -la | sed -n '1,60p'
 
 - name: Auto-bootstrap wrapper if missing
-  run: 0
+  run: 
     set -e
     WRAP=""
     if [ -f kt/gradlew ]; then WRAP="kt/gradlew"; fi
