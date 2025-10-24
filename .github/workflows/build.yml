@@ -90,6 +90,11 @@ dependencyResolutionManagement {
 rootProject.name = "PersonaAndroidstarter"
 include(":app")
 EOF
+
+- name: Build Debug APK
+        run: |
+          ./gradle-8.7/bin/gradle --no-daemon --no-parallel --max-workers=1 \
+            --stacktrace :app:assembleDebug
           fi
           if [ -d kt/app ]; then
             echo 'project(":app").projectDir = file("kt/app")' >> settings.gradle.kts
