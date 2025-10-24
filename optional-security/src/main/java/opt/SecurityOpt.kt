@@ -21,3 +21,24 @@ object SecurityOpt {
 object EmulatorGuard { fun detect(ctx: android.content.Context) = false }
 object PlayIntegrityGuard { fun check(ctx: android.content.Context) = true }
 object HookDeepGuard { fun scan() = false }
+
+data class OptPolicy(val emulator:Boolean=false, val integrity:Boolean=false, val hookDeep:Boolean=false)
+
+object OptPolicyLoader {
+    fun fetch(json: String?): OptPolicy? = try {
+        json?.let { kotlinx.serialization.json.Json.decodeFromString(OptPolicy.serializer(), it) }
+    } catch (_: Exception) { null }
+}
+
+fun applyRemotePolicy(p: OptPolicy?) {
+    p ?: return
+    // BuildConfigは書き換え不可なので“ランタイム上書きフラグ”を用意
+    RuntimeFlag.EMULATOR  = RuntimeFlag.EMULATOR  || p.emulator
+    RuntimeFlag.INTEGRITY = RuntimeFlag.INTEGRITY || p.integrity
+    RuntimeFlag.HOOK_DEEP = RuntimeFlag.HOOK_DEEP || p.hookDeep
+}
+object RuntimeFlag {
+    var EMULATOR=false; var INTEGRITY=false; var HOOK_DEEP=false
+}
+
+val enabled = SecurityOptConfig.EMULATOR || RuntimeFlag.EMULATOR
