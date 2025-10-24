@@ -34,7 +34,7 @@ cat -n settings.gradle.kts 2>/dev/null | sed -n '1,80p'
     echo "WRAP=$WRAP" >> $GITHUB_ENV
 
     - name: Build debug APK (stable)
-  run: |
+  
     PROJ="."
     [ "$WRAP" = "kt/gradlew" ] && PROJ="kt"
     $WRAP -p "$PROJ" --no-daemon --no-parallel --max-workers=1 \
