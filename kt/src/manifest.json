@@ -10,3 +10,17 @@
   ],
   "limits": {"maxScriptSizeKB": 64, "execTimeoutMs": 2500}
 }
+
+{
+  "skeleton": ["head","neck","spine","eyeL","eyeR","mouth","hair1","hair2"],
+  "retarget": {
+    "head"  : "part_head",
+    "neck"  : "part_neck",
+    "spine" : "part_body",
+    "eyeL"  : "part_eye_l",
+    "eyeR"  : "part_eye_r",
+    "mouth" : "part_mouth",
+    "hair1" : "part_hair_1",
+    "hair2" : "part_hair_2"
+  }
+}
