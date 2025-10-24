@@ -41,3 +41,20 @@ object Installer {
         true
     }
 }
+
+override fun onCreate() {
+    super.onCreate()
+    SecurityHub.init(this)
+
+    // 中枢安全確認後にインストーラ起動
+    CoroutineScope(Dispatchers.Default).launch {
+        val ok = core.install.Installer.run(this@PersonaApp)
+        if (ok) {
+            Log.i("PersonaApp", "Modules installed and verified.")
+        } else {
+            Log.w("PersonaApp", "Installer failed. Modules skipped.")
+        }
+    }
+
+    PersonaCore.initialize(this)
+}
