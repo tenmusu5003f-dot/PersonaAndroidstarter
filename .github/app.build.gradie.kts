@@ -1,5 +1,5 @@
 - name: Grant execute permission for Gradle Wrapper
-  run: chmod 《.github》./gradlew
+  run: chmod +x ./gradlew
 - name: Build with Gradle
   run: ./gradlew build
 
