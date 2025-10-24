@@ -1,37 +1,24 @@
 name: Build
-
 on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v3
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      # ローカル不要。CI上でGradle本体を用意
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      # ★ここで wrapper を生成（リポジトリ内に作られる）
-      - name: Generate Gradle Wrapper
-        run: gradle wrapper --gradle-version 8.7
-
-      - name: Grant execute permission for gradlew
+      - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # プロジェクトが標準配置(app/)ならこれでOK
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
+      - name: Build Debug APK (project-dir=kt)
+        run: |
+          ./gradlew -p kt --no-daemon --no-parallel --max-workers=1 clean assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: kt/app/build/outputs/apk/debug/app-debug.apk
