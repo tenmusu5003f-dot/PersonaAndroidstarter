@@ -1,24 +1,46 @@
-name: Build
-on: [push, pull_request]
+pwd; ls -la
+git ls-files | grep -E '(^|/)gradlew$' || true
+wc -c gradlew 2>/dev/null || true
+wc -c kt/gradlew 2>/dev/null || true
+cat -n settings.gradle.kts 2>/dev/null | sed -n '1,80p'
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: '17' }
-      - uses: gradle/actions/setup-gradle@v3
+# 既存の jobs.build.steps の checkout のすぐ下に追加
+- name: Diagnose paths
+  run: |
+    echo "PWD=$(pwd)"
+    git ls-files | grep -E '(^|/)gradlew$' || echo "no wrapper tracked"
+    ls -la | sed -n '1,60p'
 
-      - name: Make gradlew executable
-        run: chmod +x gradlew
+- name: Auto-bootstrap wrapper if missing
+  run: chmod +x gradlew
+    set -e
+    WRAP=""
+    if [ -f kt/gradlew ]; then WRAP="kt/gradlew"; fi
+    if [ -f gradlew ];     then WRAP="gradlew";     fi
+    # 壊れ(2KB未満)は除去
+    [ -n "$WRAP" ] && [ $(wc -c <"$WRAP") -lt 2000 ] && rm -f "$WRAP" && WRAP=""
+    # 無ければ公式からブート
+    if [ -z "$WRAP" ]; then
+      echo "No healthy wrapper → bootstrap Gradle 8.7"
+      curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o g.zip
+      unzip -q g.zip
+      # プロジェクトが kt/ 配下なら -p kt、直下なら -p .
+      ./gradle-8.7/bin/gradle -p kt wrapper --gradle-version 8.7
+      WRAP="kt/gradlew"
+    fi
+    
+    sed -i 's/\r$//' "$WRAP"
+    chmod +x "$WRAP"
+    echo "WRAP=$WRAP" >> $GITHUB_ENV
 
-      - name: Build Debug APK (project-dir=kt)
-        run: |
-          ./gradlew -p kt --no-daemon --no-parallel --max-workers=1 clean assembleDebug
+    - name: Build debug APK (stable)
+  run: |
+    PROJ="."
+    [ "$WRAP" = "kt/gradlew" ] && PROJ="kt"
+    $WRAP -p "$PROJ" --no-daemon --no-parallel --max-workers=1 \
+      --stacktrace clean assembleDebug
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: kt/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+  with: { name: app-debug-kt,   path: kt/app/build/outputs/apk/debug/app-debug.apk, if-no-files-found: ignore }
+- uses: actions/upload-artifact@v4
+  with: { name: app-debug-root, path: app/build/outputs/apk/debug/app-debug.apk,    if-no-files-found: ignore }
