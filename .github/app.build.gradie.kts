@@ -38,7 +38,12 @@ android {
     }
   }
 
-  // assets に先ほど作る出力を追加
+  
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+}// assets に先ほど作る出力を追加
   sourceSets["main"].assets.srcDir("$buildDir/generated/assets/included_assets")
 }
 
