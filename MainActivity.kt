@@ -34,3 +34,20 @@ class MainActivity : AppCompatActivity() {
     uiScope.cancel()
   }
 }
+
+override fun onStart() {
+    super.onStart()
+    val nav = (supportFragmentManager
+        .findFragmentById(R.id.nav_host) as NavHostFragment).navController
+
+    ui.launch {
+        // FastBootで初期化を一括＆最速処理
+        val ok = withContext(Dispatchers.IO) { FastBoot.launch(this@MainActivity) }
+        if (ok) {
+            if (session.isSignedIn()) nav.navigate(R.id.homeFragment)
+            else nav.navigate(R.id.loginFragment)
+        } else {
+            AuthGate.enforce(nav, session)
+        }
+    }
+}
