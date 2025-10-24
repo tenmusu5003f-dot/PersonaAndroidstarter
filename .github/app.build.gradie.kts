@@ -1,3 +1,8 @@
+- name: Grant execute permission for Gradle Wrapper
+  run: chmod +x ./gradlew
+- name: Build with Gradle
+  run: ./gradlew build
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
