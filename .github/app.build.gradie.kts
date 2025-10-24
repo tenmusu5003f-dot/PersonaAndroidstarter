@@ -40,3 +40,21 @@ dependencies {implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Navigation/Compose等を使うならここに追加（後でOK）
 }
+
+android {
+  buildTypes {
+    debug {
+      buildConfigField("boolean","OPT_EMULATOR","true")
+      buildConfigField("boolean","OPT_INTEGRITY","false")
+      buildConfigField("boolean","OPT_HOOK_DEEP","false")
+    }
+    release {
+      buildConfigField("boolean","OPT_EMULATOR","false")
+      buildConfigField("boolean","OPT_INTEGRITY","false")
+      buildConfigField("boolean","OPT_HOOK_DEEP","false")
+      // R8が未使用コードを消しやすい設定
+      isMinifyEnabled = true
+      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+    }
+  }
+}
