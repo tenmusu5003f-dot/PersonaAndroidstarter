@@ -51,3 +51,10 @@ val includeExtraAssets by tasks.registering(Copy::class) {
 }
 
 tasks.named("preBuild") { dependsOn(includeExtraAssets) }
+
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("androidx.navigation:navigation-fragment-ktx:2.8.3")
+    implementation("androidx.navigation:navigation-ui-ktx:2.8.3")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+}
