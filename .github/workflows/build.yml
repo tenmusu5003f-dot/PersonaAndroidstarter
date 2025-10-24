@@ -75,12 +75,9 @@ steps:
             echo 'project(":app").projectDir = file("kt/app")' >> settings.gradle.kts
           fi
 
-          # 2) ルート build.gradle.kts（プラグインの版を宣言）
-          cat > build.gradle.kts <<'EOF'
-
-
-  - name: Create build.gradle.kts
+- name: Create root build.gradle.kts
     run: |
+      # 2) ルート build.gradle.kts（プラグインの版を宣言）
       cat > build.gradle.kts <<'EOF'
       plugins {
           id("com.android.application") version "8.1.0" apply false
