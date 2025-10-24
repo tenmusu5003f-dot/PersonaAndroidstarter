@@ -42,3 +42,15 @@ object RuntimeFlag {
 }
 
 val enabled = SecurityOptConfig.EMULATOR || RuntimeFlag.EMULATOR
+
+// 既存の最小コア後に、軽く並列で起動
+async {
+    if (RuntimeFlag.EMULATOR || RuntimeFlag.INTEGRITY || RuntimeFlag.HOOK_DEEP) {
+        opt.SecurityOpt.run(ctx)  // 失敗してもフェイルセーフで続行
+    }
+
+}
+
+# optional-security の公開APIだけ保持（中身はフラグfalseなら消える）
+-keep class opt.SecurityOpt { *; }
+-keep class opt.SecurityOptConfig { *; }
