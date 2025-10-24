@@ -1,11 +1,5 @@
-android {
-    sourceSets["main"].java.srcDirs(
-        "kt/app/main/java",
-        "kt/app/src/main/java/kotlin"
-    )
-}
-
 plugins {
+    // ここでは「apply false」で定義だけ。各モジュール側でapplyする
     id("com.android.application") version "8.1.0" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.0" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.24" apply false
 }
