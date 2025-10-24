@@ -1,50 +1,62 @@
-package core.plugins
-
-import core.Capability
-
-/**
- * IkarugaPlugin
- * - Persona プラグインのサンプル実装。
- * - プラグインは Capability を宣言し、PersonaCore に登録されて利用される。
- */
-class IkarugaPlugin : PersonaPlugin {
-
-  override val id: String = "ikaruga"
-  override val displayName: String = "斑鳩"
-  override val description: String = "静寂の心を持つペルソナ。音声や状態制御を担当する。"
-
-  override fun getCapabilities(): List<Capability> = listOf(
-    Capability.Greeting,
-    Capability.Status
-  )
-
-  override fun onActivate() {
-    println("[$displayName] 起動完了。")
-  }
-
-  override fun onDeactivate() {
-    println("[$displayName] 停止。")
-  }
-
-  override fun execute(capability: Capability, input: String?): String {
-    return when (capability) {
-      Capability.Greeting -> "……こんばんは。準備はできています。"
-      Capability.Status -> "システム稼働率：100%。エラーなし。"
+// ScriptEngine.kt
+class ScriptEngine {
+    private val sandbox = ScriptSandbox()
+    fun run(scriptText: String) {
+        val ast = ScriptParser.parse(scriptText)
+        sandbox.guard {
+            ScriptExecutor.execute(ast)
+        }
     }
-  }
 }
 
-/**
- * PersonaPlugin ベースインターフェース。
- * どのペルソナもこれを実装する。
- */
-interface PersonaPlugin {
-  val id: String
-  val displayName: String
-  val description: String
-
-  fun getCapabilities(): List<Capability>
-  fun onActivate()
-  fun onDeactivate()
-  fun execute(capability: Capability, input: String? = null): String
+// ScriptSandbox.kt
+class ScriptSandbox {
+    inline fun guard(block: () -> Unit) {
+        try {
+            withTimeout(3000) { block() }   // 無限ループ対策
+        } catch (e: Exception) {
+            Log.e("ScriptSandbox", "Error: ${e.message}")
+        }
+    }
 }
+
+// ScriptParser.kt
+object ScriptParser {
+    fun parse(src: String): List<Command> {
+        return src.lines()
+            .filter { it.isNotBlank() }
+            .map { line ->
+                val parts = line.split(" ", limit = 2)
+                Command(parts[0], parts.getOrNull(1))
+            }
+    }
+}
+data class Command(val name: String, val arg: String?)
+
+// ScriptParser.kt
+object ScriptParser {
+
+  // ScriptExecutor.kt
+object ScriptExecutor {
+    fun execute(cmds: List<Command>) {
+        for (c in cmds) when (c.name) {
+            "say" -> say(c.arg ?: "")
+            "wait" -> waitMs(c.arg?.toLongOrNull() ?: 0)
+            else -> Log.w("Executor", "Unknown command: ${c.name}")
+        }
+    }
+    private fun say(text: String) {
+        // TTSエンジンを呼び出す処理を後で接続
+    }
+    private fun waitMs(ms: Long) { Thread.sleep(ms) }
+}
+    fun parse(src: String): List<Command> {
+        return src.lines()
+            .filter { it.isNotBlank() }
+            .map { line ->
+                val parts = line.split(" ", limit = 2)
+                Command(parts[0], parts.getOrNull(1))
+            }
+    }
+}
+data class Command(val name: String, val arg: String?)
