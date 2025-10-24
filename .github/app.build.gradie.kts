@@ -1,8 +1,8 @@
-// app/build.gradle.kts
 plugins {
   id("com.android.application")
   kotlin("android")
 }
+
 android {
   namespace = "com.persona"
   compileSdk = 34
