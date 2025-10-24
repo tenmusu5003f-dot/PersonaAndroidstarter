@@ -15,3 +15,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "PersonaAndroidstarter"
 include(":app")
+if (file("kt/app").isDirectory) {
+    project(":app").projectDir = file("kt/app")
+}
