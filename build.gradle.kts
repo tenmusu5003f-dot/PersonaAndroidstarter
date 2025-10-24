@@ -1,14 +1,17 @@
-android {
-    compileSdkVersion 34  // ← 最新を推奨
-    defaultConfig {
-        applicationId "com.example.persona"
-        minSdkVersion 26    // ★ここを26以上に
-        targetSdkVersion 34
-        ...
-    }
+plugins {
+    id("com.android.application")
+    kotlin("android")
 }
 
-plugins {
-    id("com.android.application") version "8.5.2" apply false
-    kotlin("android") version "1.9.24" apply false
+android {
+    namespace = "com.example.persona"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.example.persona"
+        minSdk = 26
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+    }
 }
