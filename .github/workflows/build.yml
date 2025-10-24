@@ -1,193 +1,56 @@
-# 既存の jobs.build.steps の checkout のすぐ下に追加
-- name: Diagnose paths
-  run: |--no-daemon --no-parallel --max-workers
-    echo "PWD=$(pwd)"
-    git ls-files | grep -E '(^|/)gradlew$' || echo "no wrapper tracked"
-    ls -la | sed -n '1,60p'
-
-- name: Auto-bootstrap wrapper if missing
-  run: --no-daemon --no-parallel --max-workers|
-    set -e
-    WRAP=""
-    if [ -f kt/gradlew ]; then WRAP="kt/gradlew"; fi
-    if [ -f gradlew ];     then WRAP="gradlew";     fi
-    # 壊れ(2KB未満)は除去
-    [ -n "$WRAP" ] && [ $(wc -c <"$WRAP") -lt 2000 ] && rm -f "$WRAP" && WRAP=""
-    # 無ければ公式からブート
-    if [ -z "$WRAP" ]; then
-      echo "No healthy wrapper → bootstrap Gradle 8.7"
-      curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o g.zip
-      unzip -q g.zip
-      # プロジェクトが kt/ 配下なら -p kt、直下なら -p .
-      ./gradle-8.7/bin/gradle -p kt wrapper --gradle-version 8.7
-      WRAP="kt/gradlew"
-    fi
-    sed -i 's/\r$//' "$WRAP"
-    chmod +x "$WRAP"
-    echo "WRAP=$WRAP" >> $GITHUB_ENV- uses: actions/upload-artifact@v4
-  with: { name: app-debug-kt,   path: kt/app/build/outputs/apk/debug/app-debug.apk, if-no-files-found: ignore }
-- uses: actions/upload-artifact@v4
-  with: { name: app-debug-root, path: app/build/outputs/apk/debug/app-debug.apk,    if-no-files-found: ignore }pwd; ls -la
-git ls-files | grep -E '(^|/)gradlew$' || true
-wc -c gradlew 2>/dev/null || true
-wc -c kt/gradlew 2>/dev/null || true
-cat -n settings.gradle.kts 2>/dev/null | sed -n '1,80p'name: Build
+name: Build
 on: [push, pull_request]
 
-jobs:　--no-daemon --no-parallel --max-workers
-  build:　--no-daemon --no-parallel --max-workers
+jobs:
+  build:
     runs-on: ubuntu-latest
-    steps:　--no-daemon --no-parallel --max-workers
+
+    steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: '17' }
-
-      - uses: gradle/actions/setup-gradle@v3
-
-      # 1) Wrapperの健全性チェック（存在/サイズ/必要ファイル）
-      - name: Check wrapper presence
-        id: chk
-        run: |--no-daemon --no-parallel --max-workers
-          set -e
-          has_root=false; has_kt=false
-          [ -f gradlew ] && has_root=true
-          [ -f kt/gradlew ] && has_kt=true
-          echo "has_root=$has_root" >> $GITHUB_OUTPUT
-          echo "has_kt=$has_kt" >> $GITHUB_OUTPUT
-          # 2KB未満なら壊れてる（中身がYAML等の可能性）
-          if [ -f gradlew ] && [ $(wc -c <gradlew) -lt 2000 ]; then rm -f gradlew; fi
-          if [ -f kt/gradlew ] && [ $(wc -c <kt/gradlew) -lt 2000 ]; then rm -f kt/gradlew; fi
-
-      # 2) 無ければ公式Gradleから自己ブートでwrapper生成
-      - name: Bootstrap wrapper (if missing)
-        if: ${{ steps.chk.outputs.has_root == 'false' && steps.chk.outputs.has_kt == 'false' }}
-        run: |--no-daemon --no-parallel --max-workers
-          set -e
-          curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o g.zip
-          unzip -q g.zip
-          # プロジェクトが kt/ 配下想定。違うなら -p . に変更してOK
-          ./gradle-8.7/bin/gradle -p kt wrapper --gradle-version 8.7
-
-      # 3) 改行( CRLF )→LF、実行権限付与
-      - name: Sanitize wrapper & chmod
-        run: |--no-daemon --no-parallel --max-workers
-          set -e
-          WRAP=""
-          if   [ -f kt/gradlew ]; then WRAP="kt/gradlew"
-          elif [ -f gradlew     ]; then WRAP="gradlew"
-          else echo "wrapper not found"; exit 1; fi
-          sed -i 's/\r$//' "$WRAP"
-          chmod +x "$WRAP"
-          echo "WRAP=$WRAP" >> $GITHUB_ENV
-
-      # 4) 依存取得の揺れ対策＋座標指定でビルド
-      - name: Build debug APK (stable)
-        run: |--no-daemon --no-parallel --max-workers
-          set -e
-          PROJ="."
-          [ -f kt/gradlew ] && PROJ="kt"
-          $WRAP -p "$PROJ" --no-daemon --no-parallel --max-workers=1 \
-            --stacktrace clean assembleDebug
-
-      # 5) どちらの配置でもAPKを拾う
-      - name: Upload APK (kt/)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:　--no-daemon --no-parallel --max-workers
-          name: app-debug-kt
-          path: kt/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: ignore
-
-      - name: Upload APK (root app/)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:　--no-daemon --no-parallel --max-workers
-          name: app-debug-root
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: ignorename: Build
-on: [push, pull_request]
-
-jobs:　--no-daemon --no-parallel --max-workers
-  build:　--no-daemon --no-parallel --max-workers
-    runs-on: ubuntu-latest
-    steps:　--no-daemon --no-parallel --max-workers
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-java@v4
-        with:　--no-daemon --no-parallel --max-workers
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
           distribution: temurin
           java-version: '17'
 
-      - uses: gradle/actions/setup-gradle@v3
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v3
 
-      # 1) プロジェクト座標の自動検出（kt/ があれば kt、なければルート）
-      - name: Detect project dir
-        id: detect
-        run: --no-daemon --no-parallel --max-workername: Build
-on: [push, pull_request]
-
-jobs:　--no-daemon --no-parallel --max-workers
-  build:　--no-daemon --no-parallel --max-workers
-    runs-on: ubuntu-latest
-    steps:　--no-daemon --no-parallel --max-workers
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: '17' }
-
-      - uses: gradle/actions/setup-gradle@v3
-
-      # 1) Wrapperの健全性チェック（存在/サイズ/必要ファイル）
-      - name: Check wrapper presence
-        id: chk
-        run: --no-daemon --no-parallel --max-workers
+      # ▼ ここがミソ：wrapper が無ければ自動で“復活”させる
+      - name: Bootstrap Gradle 8.7 if wrapper is missing
+        run: |
           set -e
-          has_root=false; has_kt=false
-          [ -f gradlew ] && has_root=true
-          [ -f kt/gradlew ] && has_kt=true
-          echo "has_root=$has_root" >> $GITHUB_OUTPUT
-          echo "has_kt=$has_kt" >> $GITHUB_OUTPUT
-          # 2KB未満なら壊れてる（中身がYAML等の可能性）
-          if [ -f gradlew ] && [ $(wc -c <gradlew) -lt 2000 ]; then rm -f gradlew; fi
-          if [ -f kt/gradlew ] && [ $(wc -c <kt/gradlew) -lt 2000 ]; then rm -f kt/gradlew; fi
+          if [ ! -f gradlew ] && [ ! -f kt/gradlew ]; then
+            echo "No wrapper found. Bootstrapping Gradle 8.7..."
+            curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o gradle.zip
+            unzip -q gradle.zip
+            # プロジェクトが kt/ 配下想定。違う場合は -p . に変えてOK
+            ./gradle-8.7/bin/gradle -p kt wrapper --gradle-version 8.7
+          fi
 
-      # 2) 無ければ公式Gradleから自己ブートでwrapper生成
-      - name: Bootstrap wrapper (if missing)
-        if: ${{ steps.chk.outputs.has_root == 'false' && steps.chk.outputs.has_kt == 'false' }}
-        run: |--no-daemon --no-parallel --max-workers
+      - name: Make wrapper executable
+        run: |
+          if [ -f kt/gradlew ]; then
+            chmod +x kt/gradlew
+          elif [ -f gradlew ]; then
+            chmod +x gradlew
+          else
+            echo "gradlew not found after bootstrap" && exit 1
+          fi
+
+      - name: Build Debug APK (project-dir auto)
+        run: |
           set -e
-          curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o g.zip
-          unzip -q g.zip
-          # プロジェクトが kt/ 配下想定。違うなら -p . に変更してOK
-          ./gradle-8.7/bin/gradle -p kt wrapper --gradle-version 8.7
+          WRAP="./gradlew"; PROJ="."
+          if [ -f kt/gradlew ]; then WRAP="./kt/gradlew"; PROJ="kt"; fi
+          "$WRAP" -p "$PROJ" --no-daemon --no-parallel --max-workers=1 clean assembleDebug
 
-      # 3) 改行( CRLF )→LF、実行権限付与
-      - name: Sanitize wrapper & chmod
-        run: |--no-daemon --no-parallel --max-workers
-          set -e
-          WRAP=""
-          if   [ -f kt/gradlew ]; then WRAP="kt/gradlew"
-          elif [ -f gradlew     ]; then WRAP="gradlew"
-          else echo "wrapper not found"; exit 1; fi
-          sed -i 's/\r$//' "$WRAP"
-          chmod +x "$WRAP"
-          echo "WRAP=$WRAP" >> $GITHUB_ENV
-
-      # 4) 依存取得の揺れ対策＋座標指定でビルド
-      - name: Build debug APK (stable)
-        run: |--no-daemon --no-parallel --max-workers
-          set -e
-          PROJ="."
-          [ -f kt/gradlew ] && PROJ="kt"
-          $WRAP -p "$PROJ" --no-daemon --no-parallel --max-workers=1 \
-            --stacktrace clean assembleDebug
-
-      # 5) どちらの配置でもAPKを拾う
+      # kt/ 配下と通常 app/ の両方をカバー（無ければ無視）
       - name: Upload APK (kt/)
         if: always()
         uses: actions/upload-artifact@v4
-        with:--no-daemon --no-parallel --max-workers
+        with:
           name: app-debug-kt
           path: kt/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: ignore
@@ -195,70 +58,7 @@ jobs:　--no-daemon --no-parallel --max-workers
       - name: Upload APK (root app/)
         if: always()
         uses: actions/upload-artifact@v4
-        with:　--no-daemon --no-parallel --max-workers
+        with:
           name: app-debug-root
           path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: ignore--no-daemon --no-parallel --max-workers
-          set -e
-          PROJ="."
-          [ -d kt/app ] && PROJ="kt"
-          echo "proj=$PROJ" >> $GITHUB_OUTPUT
-          echo "Detected project dir: $PROJ"
-
-      # 2) wrapper を自己回復（無い/壊れてる/改行おかしい すべて面倒見る）
-      - name: Ensure Gradle wrapper
-        run: |--no-daemon --no-parallel --max-workers
-          set -e
-          PROJ="${{ steps.detect.outputs.proj }}"
-          WRAP="gradlew"
-          [ "$PROJ" != "." ] && WRAP="$PROJ/gradlew"
-
-          # 2KB未満＝壊れ（YAML等）の可能性 → 削除
-          if [ -f "$WRAP" ] && [ $(wc -c <"$WRAP") -lt 2000 ]; then
-            echo "Wrapper seems broken, removing..."
-            rm -f "$WRAP"
-          fi　--no-daemon --no-parallel --max-workers
-
-          if [ ! -f "$WRAP" ]; then
-            echo "No wrapper -> bootstrap Gradle 8.7"
-            curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o g.zip
-            unzip -q g.zip
-            ./gradle-8.7/bin/gradle -p "$PROJ" wrapper --gradle-version 8.7
-          fi　--no-daemon --no-parallel --max-workers
-
-          # CRLF→LF & 実行権限
-          sed -i 's/\r$//' "$WRAP" || true
-          chmod +x "$WRAP"
-
-          echo "WRAP=$WRAP" >> $GITHUB_ENV
-          echo "PROJ=$PROJ" >> $GITHUB_ENV
-          echo "Wrapper ready at: $WRAP (project=$PROJ)"
-
-      # 3) 落ち着いてビルド（座標固定、非並列、ワーカー1本）
-      - name: Build debug APK
-        run: |--no-daemon --no-parallel --max-workers
-          $WRAP -p "$PROJ" --no-daemon --no-parallel --max-workers=1 \
-            --stacktrace clean assembleDebug
-
-      # 4) どちらの配置でもAPKを拾う（無ければ無視）
-      - name: Upload APK (kt/)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:　--no-daemon --no-parallel --max-workers
-          name: app-debug-kt
-          path: kt/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: ignore
-
-      - name: Upload APK (root app/)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:　--no-daemon --no-parallel --max-workers
-          name: app-debug-root
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: ignore- name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install required SDK components
-        run: |--no-daemon --no-parallel --max-workers
-          sdkmanager --licenses <<< "y"
-          sdkmanager "platforms;android-34" "build-tools;34.0.0"
