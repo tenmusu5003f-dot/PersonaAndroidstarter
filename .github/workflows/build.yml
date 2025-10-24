@@ -37,10 +37,45 @@ jobs:
           sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
       # Gradle 本体をZIPで取得して直叩き（wrapperに依存しない）
-      - name: Bootstrap Gradle 8.7
+      - name: Ensure Gradle root (settings & root build)
         run: |
-          curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o g.zip
-          unzip -q g.zip
+          # 1) settings.gradle.kts（ルート直下）
+          cat > settings.gradle.kts <<'EOF'
+pluginManagement {
+  repositories {
+    google()
+    mavenCentral()
+    gradlePluginPortal()
+  }
+}
+dependencyResolutionManagement {
+  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+  repositories {
+    google()
+    mavenCentral()
+  }
+}
+rootProject.name = "PersonaAndroidstarter"
+include(":app")
+EOF
+
+          # 実体が kt/app の場合は :app をそこへマップ
+          if [ -d kt/app ]; then
+            echo 'project(":app").projectDir = file("kt/app")' >> settings.gradle.kts
+          fi
+
+          # 2) ルート build.gradle.kts（プラグインの版を宣言）
+          cat > build.gradle.kts <<'EOF'
+plugins {
+  id("com.android.application") version "8.1.0" apply false
+  kotlin("android") version "1.9.22" apply false
+}
+EOF
+
+          echo "----- settings.gradle.kts -----"
+          sed -n '1,120p' settings.gradle.kts
+          echo "----- build.gradle.kts -----"
+          sed -n '1,40p' build.gradle.kts
 
       # 物理配置をその場でマップ（kt/app でも app でもOK）
       - name: Ensure settings.gradle.kts (map :app)
