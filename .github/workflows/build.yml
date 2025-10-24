@@ -6,13 +6,13 @@ cat -n settings.gradle.kts 2>/dev/null | sed -n '1,80p'
 
 # 既存の jobs.build.steps の checkout のすぐ下に追加
 - name: Diagnose paths
-  run: |
+
     echo "PWD=$(pwd)"
     git ls-files | grep -E '(^|/)gradlew$' || echo "no wrapper tracked"
     ls -la | sed -n '1,60p'
 
 - name: Auto-bootstrap wrapper if missing
-  run: 
+  
     set -e
     WRAP=""
     if [ -f kt/gradlew ]; then WRAP="kt/gradlew"; fi
