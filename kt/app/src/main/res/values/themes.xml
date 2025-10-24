@@ -1,8 +1,9 @@
-<style name="Theme.Splash" parent="Theme.SplashScreen">
-    <!-- スプラッシュ背景色 -->
-    <item name="windowSplashScreenBackground">@android:color/black</item>
-    <!-- 表示アイコン（暫定でアプリアイコン）-->
-    <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
-    <!-- すぐTitleへ繋ぐのでポストタイム短め -->
-    <item name="postSplashScreenTheme">@style/Theme.Material3.DayNight.NoActionBar</item>
-</style>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.Persona" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- スプラッシュ画面の背景色を黒にする -->
+        <item name="android:windowSplashScreenBackground">@color/black</item>
+        <!-- ステータスバーの色 -->
+        <item name="android:statusBarColor">@color/black</item>
+
+</resources>
