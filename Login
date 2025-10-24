@@ -1,0 +1,86 @@
+// security/SessionManager.kt
+package com.persona.androidstarter.security
+import android.content.Context
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKeys
+
+class SessionManager(ctx: Context) {
+    private val master = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+    private val pref = EncryptedSharedPreferences.create(
+        "persona.secure", master, ctx,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+    fun isSignedIn(): Boolean = pref.getBoolean("signed_in", false)
+    fun signIn() = pref.edit().putBoolean("signed_in", true).apply()
+    fun signOut() = pref.edit().clear().apply()
+}
+
+// security/AuthGate.kt
+package com.persona.androidstarter.security
+import androidx.navigation.NavController
+import com.persona.androidstarter.nav.Routes
+
+object AuthGate {
+    fun enforce(nav: NavController, session: SessionManager) {
+        if (!session.isSignedIn()) {
+            nav.navigate(Routes.Login) {
+                popUpTo(Routes.Root) { inclusive = false }
+                launchSingleTop = true
+            }
+        }
+    }
+}
+
+// nav/Routes.kt
+package com.persona.androidstarter.nav
+object Routes {
+    const val Root = "root"
+    const val Login = "login"
+    const val Home = "home"
+}
+
+<!-- res/navigation/nav_graph.xml -->
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/nav_graph" app:startDestination="@id/homeFragment">
+    <fragment android:id="@+id/loginFragment"
+        android:name="com.persona.androidstarter.entrance.LoginFragment"
+        android:label="Login"/>
+    <fragment android:id="@+id/homeFragment"
+        android:name="com.persona.androidstarter.feature.home.HomeFragment"
+        android:label="Home"/>
+</navigation>
+
+// MainActivity.kt
+package com.persona.androidstarter
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.navigation.findNavController
+import androidx.navigation.fragment.NavHostFragment
+import com.persona.androidstarter.security.AuthGate
+import com.persona.androidstarter.security.SessionManager
+
+class MainActivity : AppCompatActivity() {
+    private lateinit var session: SessionManager
+    override fun onCreate(b: Bundle?) {
+        super.onCreate(b)
+        setContentView(R.layout.activity_main)
+        session = SessionManager(this)
+        // NavHost は activity_main.xml に配置しておく（FragmentContainerView）
+    }
+    override fun onStart() {
+        super.onStart()
+        val nav = (supportFragmentManager
+            .findFragmentById(R.id.nav_host) as NavHostFragment).navController
+        AuthGate.enforce(nav, session)   // ★ここで入口ガード
+    }
+}
+
+<!-- res/layout/activity_main.xml -->
+<androidx.fragment.app.FragmentContainerView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/nav_host"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:navGraph="@navigation/nav_graph"
+    android:name="androidx.navigation.fragment.NavHostFragment"/>
