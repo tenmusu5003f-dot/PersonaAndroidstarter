@@ -9,8 +9,8 @@
     echo "Unzipping Gradle..."
     unzip -q gradle.zip -d $HOME
 
-    export PATH="$HOME/gradle-8.7/bin:$PATH"
     echo "$HOME/gradle-8.7/bin" >> $GITHUB_PATH
+    export PATH="$HOME/gradle-8.7/bin:$PATH"
 
-    echo "Gradle version:"
+    echo "Gradle version check:"
     gradle --version
