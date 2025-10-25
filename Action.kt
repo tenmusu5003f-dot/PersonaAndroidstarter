@@ -1,3 +1,8 @@
+./gradlew --stop
+./gradlew clean
+./gradlew :app:assembleDebug --stacktrace
+# 失敗時は最後の 50–100 行ログを読む（原因層を特定：Gradle/Manifest/Res/Java）
+
 / (repo root)
 ├─ settings.gradle.kts       
 ├─ build.gradle.kts           
