@@ -110,3 +110,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
+
+import com.persona.core.security.AudioMonitor
+
+class MainActivity : AppCompatActivity() {
+    private lateinit var audioMonitor: AudioMonitor
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        audioMonitor = AudioMonitor(this)
+        audioMonitor.startMonitoring()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        audioMonitor.stopMonitoring()
+    }
+}
