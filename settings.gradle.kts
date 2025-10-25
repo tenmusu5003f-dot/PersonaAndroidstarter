@@ -24,3 +24,9 @@ rootProject.name = "PersonaAndroidstarter"
 // モジュールパスが kt/app の場合はこちらを使う
 // project(":app").projectDir = file("kt/app")
 include(":app")
+
+rootProject.name = "PersonaAndroidstarter"
+
+// 👇ここを有効にして（コメント外して）保存！
+project(":app").projectDir = file("kt/app")
+include(":app")
