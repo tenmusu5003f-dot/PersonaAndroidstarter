@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 既定でクリアテキストを拒否。必要なドメインだけ pin/許可を追加していく運用 -->
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
