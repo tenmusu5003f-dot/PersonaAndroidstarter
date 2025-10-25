@@ -1,8 +1,6 @@
-// kt/app/build.gradle.kts
-
-plugins {"unzip -q gradle.zip"｝
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+plugins {
+    id("com.android.application") version "8.1.0"
+    id("org.jetbrains.kotlin.android") version "1.9.22"
 }
 
 android {
@@ -25,6 +23,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
     kotlinOptions {
         jvmTarget = "17"
     }
