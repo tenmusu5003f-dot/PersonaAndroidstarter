@@ -17,6 +17,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 2. JDK 17
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # 3. Android SDK セットアップ
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # 4. gradlew に実行権限を付与
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # 5. Debug APK をビルド
+      - name: Build Debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace
+
       # 2) JDK 17
       - name: Set up JDK 17
         uses: actions/setup-java@v4
