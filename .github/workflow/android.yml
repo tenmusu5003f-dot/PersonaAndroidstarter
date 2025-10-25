@@ -9,7 +9,6 @@ on:
 
 jobs:
   build:
-    name: Build Debug APK
     runs-on: ubuntu-latest
 
     steps:
