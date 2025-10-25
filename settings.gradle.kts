@@ -1,24 +1,6 @@
-// settings.gradle.kts (project root)
+// build.gradle.kts (project root)
 
-pluginManagement {
-    repositories {
-        // ← ここが無いと com.android.application が見つからない
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
+plugins {
+    id("com.android.application") version "8.5.2" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.22" apply false
 }
-
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
-rootProject.name = "PersonaAndroidstarter"
-
-// モジュールは kt/app にあるので、これで :app として認識させる
-include(":app")
-project(":app").projectDir = File("kt/app")
