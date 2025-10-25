@@ -1,3 +1,5 @@
+<activity android:name="com.persona.androidstarter.MainActivity" ...>
+
 package com.persona.androidstarter
 
 import android.os.Bundle
