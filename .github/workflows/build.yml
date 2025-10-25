@@ -33,12 +33,15 @@ jobs:
       # ⑤ Gradle 8.7 を取得して展開
       - name: Download Gradle 8.7
         run: |
-          curl -sLo gradle.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
-
+          unzip -q gradle.zip
+          export PATH=$PWD/gradle-8.7/bin:$PATH
+         
       # ⑥ ビルド実行
       - name: Build Debug APK
         run: |
-          ./gradle-8.7/bin/gradle --no-daemon --stacktrace :app:assembleDebug
+         ./gradle-8.7/bin/gradle --no-daemon --stacktrace :app:assembleDebug
+         - name: Setup Gradle
+
 
       # ⑦ 生成物を保存
       - name: Upload APK
