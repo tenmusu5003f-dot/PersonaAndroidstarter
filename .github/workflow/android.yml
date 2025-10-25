@@ -13,26 +13,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1) 取得
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 2) JDK 17
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
+      # 3) Android SDK（最小構成）
       - name: Install Android SDK
         run: |
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
+      # 4) gradlew 実行権限
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
+      # 5) Debug APK ビルド（モジュールが app の場合）
       - name: Build Debug APK
         run: ./gradlew :app:assembleDebug --stacktrace
 
+      # 6) 生成物を保存（どちらの配置でも拾えるように2経路）
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
