@@ -1,6 +1,5 @@
+// <project-root>/build.gradle.kts
 plugins {
-    // ルートでは Android プラグインを入れない
-    // Kotlin DSL 用のプラグイン管理だけで十分
+    id("com.android.application") version "8.5.2" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.22" apply false
 }
-
-// もし settings.gradle.kts で include(":app") しているなら何も追加しなくてOK
