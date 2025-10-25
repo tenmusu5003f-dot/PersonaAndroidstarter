@@ -1,3 +1,7 @@
+- name: Generate gradlew if missing
+  run: |
+    gradle wrapper
+
 name: Android CI
 
 on:
