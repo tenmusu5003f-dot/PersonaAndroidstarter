@@ -1,75 +1,45 @@
-name: Build (no-wrapper)
-on:
-  push:
-    branches: [ main ]
+- name: Download and setup Gradle 8.7
+  run: |
+    echo "Downloading Gradle..."
+    curl -L -o gradle.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+    echo "Unzipping Gradle..."
+    unzip -q gradle.zip -d $HOME
 
-    steps:
-      - uses: actions/checkout@v4
+    export PATH="$HOME/gradle-8.7/bin:$PATH"
+    gradle --version
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept SDK licenses
-        run: yes | sdkmanager --licenses
-
-      # 🧩 gradlewを使わず、Gradle本体を取得して解凍
-      - name: Download Gradle
-        run: |
-          curl -sLo gradle.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
-          unzip -q gradle.zip
-          ./gradle-8.7/bin/gradle --version
-
-      # 🧩 ここでビルド
-      - name: Build Debug APK
-        run: |
-          ./gradle-8.7/bin/gradle --no-daemon --stacktrace :app:assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: '**/app-debug.apk'
-
-          - name: Ensure Gradle root (settings & root build)
+- name: Ensure Gradle root (settings & root build)
   run: |
     # settings.gradle.kts
     cat > settings.gradle.kts <<'EOF'
-pluginManagement {
-    repositories {
-        google()                   // ← これが最重要
-        mavenCentral()
-        gradlePluginPortal()
+    pluginManagement {
+        repositories {
+            google()
+            mavenCentral()
+            gradlePluginPortal() // これが最重要
+        }
     }
-}
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
+    dependencyResolutionManagement {
+        repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+        repositories {
+            google()
+            mavenCentral()
+        }
     }
-}
-rootProject.name = "PersonaAndroidstarter"
-include(":app")
-EOF
+    rootProject.name = "PersonaAndroidstarter"
+    include(":app")
+    EOF
 
+    # kt/appディレクトリが存在するなら設定
     if [ -d kt/app ]; then
       echo 'project(":app").projectDir = file("kt/app")' >> settings.gradle.kts
     fi
 
     # ルート build.gradle.kts
     cat > build.gradle.kts <<'EOF'
-plugins {
-    id("com.android.application") version "8.1.0" apply false
-    kotlin("android") version "1.9.22" apply false
-}
-EOF
+    plugins {
+        id("com.android.application") version "8.1.0" apply false
+        kotlin("android") version "1.9.22" apply false
+    }
+    EOF
