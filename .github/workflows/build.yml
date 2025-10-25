@@ -34,8 +34,6 @@ jobs:
       - name: Download Gradle 8.7
         run: |
           curl -sLo gradle.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
-          unzip -q gradle.zip
-          ./gradle-8.7/bin/gradle --version
 
       # ⑥ ビルド実行
       - name: Build Debug APK
