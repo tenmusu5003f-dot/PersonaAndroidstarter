@@ -6,4 +6,11 @@
     <color name="colorPrimary">#6750A4</color>
     <color name="colorOnPrimary">#FFFFFF</color>
     <color name="colorPrimaryContainer">#EADDFF</color>
+
+    <color name="purple_500">#6200EE</color>
+    <color name="purple_700">#3700B3</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- ランチャー背景色（adaptive icon 用）-->
+    <color name="ic_launcher_background">#2A2A2A</color>
 </resources>
