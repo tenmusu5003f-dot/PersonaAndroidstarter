@@ -1,16 +1,45 @@
 - name: Download and setup Gradle 8.7
-  shell: bash
   run: |
-    set -eux
-
     echo "Downloading Gradle..."
     curl -L -o gradle.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
 
     echo "Unzipping Gradle..."
     unzip -q gradle.zip -d $HOME
 
-    echo "$HOME/gradle-8.7/bin" >> $GITHUB_PATH
     export PATH="$HOME/gradle-8.7/bin:$PATH"
-
-    echo "Gradle version check:"
     gradle --version
+
+- name: Ensure Gradle root (settings & root build)
+  run: |
+    # settings.gradle.kts
+    cat > settings.gradle.kts <<'EOF'
+    pluginManagement {
+        repositories {
+            google()
+            mavenCentral()
+            gradlePluginPortal() // これが最重要
+        }
+    }
+    dependencyResolutionManagement {
+        repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+        repositories {
+            google()
+            mavenCentral()
+        }
+    }
+    rootProject.name = "PersonaAndroidstarter"
+    include(":app")
+    EOF
+
+    # kt/appディレクトリが存在するなら設定
+    if [ -d kt/app ]; then
+      echo 'project(":app").projectDir = file("kt/app")' >> settings.gradle.kts
+    fi
+
+    # ルート build.gradle.kts
+    cat > build.gradle.kts <<'EOF'
+    plugins {
+        id("com.android.application") version "8.1.0" apply false
+        kotlin("android") version "1.9.22" apply false
+    }
+    EOF
