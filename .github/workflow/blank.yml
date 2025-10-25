@@ -11,6 +11,7 @@ jobs:
   build:
     name: Build Debug APK
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,29 +20,21 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
-      # gradle wrapper が無い環境でも自動生成
-      - name: Generate gradlew if missing
-        run: |
-          if [ ! -f ./gradlew ]; then
-            ./gradlew || true
-            gradle wrapper
-          fi
-          chmod +x ./gradlew
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK (minimal)
-        run: |
-          yes | sdkmanager --licenses
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-
-      - name: Build Debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace
+      # Use Gradle Action (downloads Gradle if no wrapper present)
+      - name: Run Gradle build (assembleDebug)
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: :app:assembleDebug --no-daemon
+          # gradle-version: '9.1'  # 必要に応じて固定する（省略可）
 
       - name: Upload APK Artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: |
-            app/build/outputs/apk/debug/app-debug.apk
-            kt/app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
