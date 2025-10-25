@@ -6,11 +6,6 @@ pluginManagement {
     }
 }
 
-plugins {
-    id("com.android.application") version "8.5.2" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.23" apply false
-}
-
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -21,11 +16,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "PersonaAndroidstarter"
 
-// モジュールパスが kt/app の場合はこちらを使う
-// project(":app").projectDir = file("kt/app")
+// ▼ app の在処に合わせて“どちらか1本だけ”採用
 include(":app")
-
-rootProject.name = "PersonaAndroidstarter"
-
+// もし実体が kt/app にあるなら ↓ の1行を有効化（コメント解除）
 project(":app").projectDir = file("kt/app")
-include(":app")
