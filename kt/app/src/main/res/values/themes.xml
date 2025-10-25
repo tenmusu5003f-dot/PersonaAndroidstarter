@@ -1,3 +1,7 @@
+<style name="Theme.Persona" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <!-- Customize your theme here. -->
+</style>
+
 <resources xmlns:tools="http://schemas.android.com/tools">
 
     <style name="Theme.Persona" parent="Theme.MaterialComponents.DayNight.NoActionBar">
