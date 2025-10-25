@@ -1,8 +1,6 @@
 // build.gradle.kts (project root)
 
 plugins {
-    id("com.android.application") version "8.5.2" apply false
-    id("ord gradle") version "1.9.22" apply false
-    id("com.android.application") version "8.5.2" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.22" apply false　
-}
+    id("file:///home/runner/work/PersonaAndroidstarter/Person aAndroidstarter/settings.gradle.kts: 7:68:" ) version "8.5.2" apply false
+
+｝
