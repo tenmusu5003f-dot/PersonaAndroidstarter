@@ -119,3 +119,23 @@ object AssetGuard {
     return md.digest().joinToString("") { "%02x".format(it) }
   }
 }
+
+package com.persona.androidstarter
+
+import android.os.Bundle
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import com.persona.core.rooms.Rooms
+
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val tv = TextView(this).apply {
+            val names = Rooms.lobby.members.joinToString("・") { it.name }
+            text = "ここにいるよ：$names"
+            textSize = 18f
+            setPadding(40, 80, 40, 40)
+        }
+        setContentView(tv)
+    }
+}
