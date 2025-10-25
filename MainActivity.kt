@@ -19,3 +19,12 @@ class MainActivity : AppCompatActivity() {
         binding.textView.text = "Hello Persona!"
     }
 }
+
+// MainActivity の onCreate 末尾あたりで
+val okStore = Security.isFromPlayStore(this)
+val okSig   = Security.isSignatureValid(this, expectedSha256 = "AA:BB:...:ZZ") // ←後で設定
+val envOK   = !Security.hasSuspiciousEnvironment()
+
+// ここでは“止めない”でログだけ。最終的に要件に応じて挙動を決める。
+android.util.Log.i("PersonaSec",
+    "store=$okStore, sig=$okSig, envOK=$envOK, debug=${Security.isDebuggable(this)}")
