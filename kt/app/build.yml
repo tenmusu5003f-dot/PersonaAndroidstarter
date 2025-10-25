@@ -1,0 +1,16 @@
+- name: Download and setup Gradle 8.7
+  shell: bash
+  run: |
+    set -eux
+
+    echo "Downloading Gradle..."
+    curl -L -o gradle.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
+
+    echo "Unzipping Gradle..."
+    unzip -q gradle.zip -d $HOME
+
+    export PATH="$HOME/gradle-8.7/bin:$PATH"
+    echo "$HOME/gradle-8.7/bin" >> $GITHUB_PATH
+
+    echo "Gradle version:"
+    gradle --version
