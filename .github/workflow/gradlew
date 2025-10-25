@@ -1,0 +1,13 @@
+- name: Generate gradlew if missing
+  run: |
+    if [ ! -f ./gradlew ]; then
+      echo "No gradlew found -> generating wrapper"
+      mkdir -p .github/.tmp-gradle
+      cd .github/.tmp-gradle
+      apt-get update && apt-get install -y wget unzip
+      # install a small gradle bootstrap (uses gradle-wrapper.jar generation via gradle init is heavy),
+      # easier if you push gradlew from local. If this fails, push gradlew from your machine.
+      cd ..
+    else
+      echo "gradlew exists"
+    fi
