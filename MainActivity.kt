@@ -1,3 +1,5 @@
+kt/app/src/main/java/com/persona/androidstarter/MainActivity.kt
+
 package com.example.persona
 
 import android.os.Bundle
