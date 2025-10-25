@@ -17,3 +17,15 @@
     </style>
 
 </resources>
+
+<!-- res/values/themes.xml -->
+<style name="Theme.Persona" parent="Theme.Material3.DayNight.NoActionBar" />
+
+<!-- Android 12+ の SplashScreen 設定 -->
+<style name="Theme.Persona.Splash" parent="Theme.SplashScreen">
+    <!-- アプリアイコン（mipmap/ic_launcher でOK） -->
+    <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+    <item name="windowSplashScreenBackground">@android:color/black</item>
+    <!-- スプラッシュからメインへ移る時のフェード -->
+    <item name="postSplashScreenTheme">@style/Theme.Persona</item>
+</style>
