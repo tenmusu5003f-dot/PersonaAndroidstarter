@@ -1,11 +1,9 @@
-# PersonaAndroidstarter
-
 name: Android CI
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -22,14 +20,14 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Set up Android SDK
+      - name: Install Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
 
       - name: Accept SDK licenses
         run: yes | sdkmanager --licenses
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
 
       - name: Build Debug APK
         run: ./gradlew :app:assembleDebug --stacktrace
@@ -38,4 +36,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/debug/*.apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            kt/app/build/outputs/apk/debug/*.apk
