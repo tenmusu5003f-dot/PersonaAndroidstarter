@@ -1,13 +1,12 @@
-kt/app/src/main/java/com/persona/androidstarter/MainActivity.kt
-
-package com.example.persona
+package com.persona.androidstarter
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.example.persona.databinding.ActivityMainBinding
+import com.persona.androidstarter.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
