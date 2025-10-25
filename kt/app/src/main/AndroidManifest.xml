@@ -6,7 +6,7 @@
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/Theme.Persona">
         <activity
-            android:name=".MainActivity"
+            android:name="com.persona.androidstarter.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
