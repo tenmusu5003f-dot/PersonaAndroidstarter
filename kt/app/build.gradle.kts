@@ -1,6 +1,6 @@
 // kt/app/build.gradle.kts
 
-plugins {unzip -q gradle.zip
+plugins {"unzip -q gradle.zip"｝
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
