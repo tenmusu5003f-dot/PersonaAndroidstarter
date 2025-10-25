@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
-jobs:
+　jobs:
   build:
     name: Build Debug APK
     runs-on: ubuntu-latest
