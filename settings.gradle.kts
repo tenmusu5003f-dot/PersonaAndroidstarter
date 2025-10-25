@@ -1,8 +1,8 @@
 pluginManagement {
     repositories {
+        gradlePluginPortal()
         google()
         mavenCentral()
-        gradlePluginPortal()
     }
 }
 
@@ -16,7 +16,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "PersonaAndroidstarter"
 
-// ▼ app の在処に合わせて“どちらか1本だけ”採用
+// app モジュールがリポジトリの別パスにある場合はパスを指定する:
+// project(":app").projectDir = file("kt/app")
+
 include(":app")
-// もし実体が kt/app にあるなら ↓ の1行を有効化（コメント解除）
-project(":app").projectDir = file("kt/app")
