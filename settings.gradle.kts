@@ -7,7 +7,6 @@ pluginManagement {
 }
 
 plugins {
-    // Kotlin DSLでのGradle設定用。必要なら残してOK
     id("com.android.application") version "8.5.2" apply false
     id("org.jetbrains.kotlin.android") version "1.9.23" apply false
 }
@@ -21,20 +20,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "PersonaAndroidstarter"
+
+// モジュールパスが kt/app の場合はこちらを使う
+// project(":app").projectDir = file("kt/app")
 include(":app")
-
-pluginManagement {
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
-
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
