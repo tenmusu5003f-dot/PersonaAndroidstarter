@@ -1,3 +1,6 @@
+val result = ActionEngine.broadcast("起動成功。世界に届けよう！")
+text = "ここにいるよ：$names\n\n---\n$result"
+
 <activity android:name="com.persona.androidstarter.MainActivity" ...>
 
 package com.persona.androidstarter
